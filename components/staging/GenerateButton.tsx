@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Loader2, Zap } from 'lucide-react';
+import { FailureRecoveryPanel, detectFailureType } from './FailureRecoveryPanel';
+import type { FailureType } from './FailureRecoveryPanel';
 
 interface GenerateButtonProps {
   roomId: string;
@@ -13,6 +14,8 @@ interface GenerateButtonProps {
   resolutionTier: '1K' | '2K' | '4K';
   variationCount: 1 | 2 | 3;
   onComplete: () => void;
+  // Sec 31: prompt suggestion from failure recovery
+  onPromptSuggestionAccepted?: (newPrompt: string) => void;
 }
 
 interface GenerateResponse {
@@ -21,6 +24,40 @@ interface GenerateResponse {
   total_cost?: number;
   queue_id?: string;
   error?: string;
+}
+
+function SpinnerIcon() {
+  return (
+    <svg
+      className="animate-spin"
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M21 12a9 9 0 11-6.219-8.56" />
+    </svg>
+  );
+}
+
+function ZapIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+    </svg>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 6L9 17l-5-5" />
+    </svg>
+  );
 }
 
 export function GenerateButton({
@@ -33,10 +70,16 @@ export function GenerateButton({
   resolutionTier,
   variationCount,
   onComplete,
+  onPromptSuggestionAccepted,
 }: GenerateButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  // Sec 32: queued state — when API returns queue_id instead of render_ids
+  const [queued, setQueued] = useState(false);
+  // Sec 31: failure recovery
+  const [failureType, setFailureType] = useState<FailureType | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   const handleGenerate = async () => {
     if (!prompt.trim()) {
@@ -47,6 +90,7 @@ export function GenerateButton({
     setIsLoading(true);
     setError(null);
     setSuccess(false);
+    setFailureType(null);
 
     try {
       const response = await fetch('/api/staging/generate', {
@@ -72,6 +116,12 @@ export function GenerateButton({
         throw new Error(data.error || 'Generation failed');
       }
 
+      // Sec 32: queued response (API returned queue_id instead of render_ids)
+      if (data.queue_id && !data.render_ids?.length) {
+        setQueued(true);
+        return;
+      }
+
       setSuccess(true);
       setTimeout(() => {
         onComplete();
@@ -80,6 +130,10 @@ export function GenerateButton({
       const errorMessage =
         err instanceof Error ? err.message : 'Unknown error occurred';
       setError(errorMessage);
+      // Sec 31: detect and set failure type for recovery panel
+      const detected = detectFailureType(errorMessage);
+      setFailureType(detected);
+      setRetryCount(c => c + 1);
       console.error('Generation error:', err);
     } finally {
       setIsLoading(false);
@@ -90,39 +144,78 @@ export function GenerateButton({
     <div className="space-y-3">
       <button
         onClick={handleGenerate}
-        disabled={isLoading || !prompt.trim() || success}
-        className={`w-full py-3 px-4 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 ${
+        disabled={isLoading || !prompt.trim() || success || queued}
+        className={`w-full py-3 px-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 min-h-[48px] ${
           success
             ? 'bg-emerald-600 text-white'
-            : isLoading
-              ? 'bg-blue-600 text-white'
-              : prompt.trim()
-                ? 'bg-blue-600 hover:bg-blue-700 text-white cursor-pointer'
-                : 'bg-stone-300 text-stone-500 cursor-not-allowed'
+            : queued
+              ? 'bg-amber-500 text-white cursor-not-allowed'
+              : isLoading
+                ? 'bg-stone-700 text-white cursor-not-allowed'
+                : prompt.trim()
+                  ? 'bg-stone-900 hover:bg-stone-800 text-white cursor-pointer'
+                  : 'bg-stone-200 text-stone-400 cursor-not-allowed'
         }`}
       >
         {isLoading ? (
           <>
-            <Loader2 className="w-4 h-4 animate-spin" />
-            Generating ({variationCount} variations)...
+            <SpinnerIcon />
+            Generating ({variationCount} variation{variationCount > 1 ? 's' : ''})…
           </>
         ) : success ? (
           <>
-            <Zap className="w-4 h-4" />
+            <CheckIcon />
             Generated Successfully!
+          </>
+        ) : queued ? (
+          <>
+            {/* Queue icon */}
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/>
+              <line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/>
+              <line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+            </svg>
+            Queued — processing shortly
           </>
         ) : (
           <>
-            <Zap className="w-4 h-4" />
+            <ZapIcon />
             Generate Pass {passNumber}
           </>
         )}
       </button>
 
-      {error && (
+      {/* Sec 31: Failure Recovery Panel (replaces basic error div) */}
+      {error && failureType && (
+        <FailureRecoveryPanel
+          failureType={failureType}
+          errorMessage={error}
+          originalPrompt={prompt}
+          onPromptSuggestionAccepted={onPromptSuggestionAccepted}
+          onRetry={handleGenerate}
+          onQueue={() => {
+            setError(null)
+            setFailureType(null)
+            setQueued(true)
+            fetch('/api/staging/queue', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                room_id: roomId, project_id: projectId,
+                pass_number: passNumber, pass_type: passType,
+                prompt: prompt.trim(), reference_urls: referenceUrls,
+                resolution_tier: resolutionTier, variation_count: variationCount,
+              }),
+            }).catch(err => console.error('[Queue] error:', err))
+          }}
+          onDismiss={() => { setError(null); setFailureType(null) }}
+          retryCount={retryCount}
+        />
+      )}
+      {error && !failureType && (
         <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
           <p className="text-sm text-red-700">
-            <strong>Error:</strong> {error}
+            <span className="font-semibold">Error:</span> {error}
           </p>
         </div>
       )}
@@ -130,18 +223,26 @@ export function GenerateButton({
       {success && (
         <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
           <p className="text-sm text-emerald-700">
-            <strong>Success!</strong> Renders are being generated. Check the
-            gallery below.
+            <span className="font-semibold">Success!</span> Renders are being generated. Check the gallery below.
           </p>
         </div>
       )}
 
-      <div className="p-3 bg-stone-100 rounded-lg">
-        <p className="text-xs text-stone-700 font-medium">
-          Estimated Cost: ₹{(getCostPerImage(resolutionTier) * variationCount).toFixed(2)}
+      {/* Sec 32: Queued state banner */}
+      {queued && (
+        <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+          <p className="text-sm text-amber-700">
+            <span className="font-semibold">Queued!</span> Another generation is in progress. Your request will start automatically — check the queue indicator in the top bar.
+          </p>
+        </div>
+      )}
+
+      <div className="p-3 bg-stone-50 rounded-lg border border-stone-200">
+        <p className="text-xs text-stone-700 font-medium tabular-nums">
+          Estimated cost: ₹{(getCostPerImage(resolutionTier) * variationCount).toFixed(2)}
         </p>
-        <p className="text-xs text-stone-600 mt-1">
-          {variationCount} variation{variationCount > 1 ? 's' : ''} at {resolutionTier}
+        <p className="text-xs text-stone-500 mt-0.5">
+          {variationCount} variation{variationCount > 1 ? 's' : ''} · {resolutionTier} resolution
         </p>
       </div>
     </div>

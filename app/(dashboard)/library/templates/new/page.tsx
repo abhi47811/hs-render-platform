@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createBrowserClient } from '@/lib/supabase/client'
+import { createClient } from '@/lib/supabase/client'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -25,7 +25,7 @@ const PASS_NUMBERS = [1, 2, 3, 4, 5]
 
 const formSchema = z.object({
   name: z.string().min(3, 'Name must be at least 3 characters'),
-  room_type: z.enum([...ROOM_TYPES] as const),
+  room_type: z.enum(ROOM_TYPES as [RoomType, ...RoomType[]]),
   style: z.string().min(3, 'Style must be at least 3 characters'),
   pass_number: z.coerce
     .number()
@@ -39,7 +39,7 @@ type FormData = z.infer<typeof formSchema>
 
 export default function NewTemplatePage() {
   const router = useRouter()
-  const supabase = createBrowserClient()
+  const supabase = createClient()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 

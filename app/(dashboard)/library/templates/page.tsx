@@ -17,16 +17,14 @@ export default async function TemplatesPage({
   searchParams: Promise<SearchParams>
 }) {
   const params = await searchParams
-  const supabase = createClient()
+  const supabase = await createClient()
 
-  // Build query with filters
   let query = supabase
     .from('prompt_templates')
     .select('*')
     .eq('is_active', true)
     .order('usage_count', { ascending: false })
 
-  // Apply filters if provided
   if (params.room_type) {
     query = query.eq('room_type', params.room_type)
   }
@@ -36,27 +34,23 @@ export default async function TemplatesPage({
 
   const { data: templates = [] } = await query
 
-  // Get unique filter options
   const { data: allTemplates = [] } = await supabase
     .from('prompt_templates')
     .select('room_type, pass_number')
     .eq('is_active', true)
 
-  const roomTypes = Array.from(
-    new Set(allTemplates.map((t) => t.room_type))
-  )
+  const roomTypes = Array.from(new Set((allTemplates ?? []).map((t) => t.room_type)))
   const passNumbers = Array.from(
-    new Set(allTemplates.map((t) => t.pass_number))
+    new Set((allTemplates ?? []).map((t) => t.pass_number))
   ).sort() as number[]
 
   return (
-    <div className="flex-1 flex flex-col p-6 overflow-auto">
+    <div className="flex-1 flex flex-col p-6 overflow-auto bg-stone-50 min-h-full">
+      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-stone-900 mb-2">
-            Prompt Templates
-          </h1>
-          <p className="text-stone-600">
+          <h1 className="text-xl font-bold text-stone-900">Prompt Templates</h1>
+          <p className="text-xs text-stone-500 mt-0.5">
             Reusable prompts for generating high-quality renders
           </p>
         </div>
@@ -69,74 +63,83 @@ export default async function TemplatesPage({
       </div>
 
       {/* Filters */}
-      <div className="bg-white border border-stone-200 rounded-lg p-4 mb-6">
+      <div className="bg-white border border-stone-200 rounded-xl p-4 mb-6">
+        <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-3">Filters</p>
         <div className="flex gap-4 flex-wrap">
           {/* Room Type Filter */}
-          <div className="flex flex-col">
-            <label className="text-sm font-medium text-stone-700 mb-2">
-              Room Type
-            </label>
-            <select
-              defaultValue={params.room_type || ''}
-              onChange={(e) => {
-                const url = new URLSearchParams(window.location.search)
-                if (e.target.value) {
-                  url.set('room_type', e.target.value)
-                } else {
-                  url.delete('room_type')
-                }
-                if (params.pass_number) url.set('pass_number', params.pass_number)
-                window.location.search = url.toString()
-              }}
-              className="px-3 py-2 border border-stone-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-stone-500"
-            >
-              <option value="">All Rooms</option>
-              {roomTypes.map((rt) => (
-                <option key={rt} value={rt}>
-                  {rt}
-                </option>
-              ))}
-            </select>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-stone-600">Room Type</label>
+            <div className="relative">
+              <select
+                defaultValue={params.room_type || ''}
+                onChange={(e) => {
+                  const url = new URLSearchParams(window.location.search)
+                  if (e.target.value) {
+                    url.set('room_type', e.target.value)
+                  } else {
+                    url.delete('room_type')
+                  }
+                  if (params.pass_number) url.set('pass_number', params.pass_number)
+                  window.location.search = url.toString()
+                }}
+                className="appearance-none px-3 py-2 pr-8 border border-stone-300 rounded-lg bg-white text-stone-700 text-sm focus:outline-none focus:ring-2 focus:ring-stone-900 cursor-pointer"
+              >
+                <option value="">All Rooms</option>
+                {roomTypes.map((rt) => (
+                  <option key={rt} value={rt}>
+                    {rt}
+                  </option>
+                ))}
+              </select>
+              <svg className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 9l6 6 6-6" />
+              </svg>
+            </div>
           </div>
 
           {/* Pass Number Filter */}
-          <div className="flex flex-col">
-            <label className="text-sm font-medium text-stone-700 mb-2">
-              Pass Number
-            </label>
-            <select
-              defaultValue={params.pass_number || ''}
-              onChange={(e) => {
-                const url = new URLSearchParams(window.location.search)
-                if (e.target.value) {
-                  url.set('pass_number', e.target.value)
-                } else {
-                  url.delete('pass_number')
-                }
-                if (params.room_type) url.set('room_type', params.room_type)
-                window.location.search = url.toString()
-              }}
-              className="px-3 py-2 border border-stone-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-stone-500"
-            >
-              <option value="">All Passes</option>
-              {passNumbers.map((pn) => (
-                <option key={pn} value={pn}>
-                  Pass {pn}
-                </option>
-              ))}
-            </select>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-stone-600">Pass</label>
+            <div className="relative">
+              <select
+                defaultValue={params.pass_number || ''}
+                onChange={(e) => {
+                  const url = new URLSearchParams(window.location.search)
+                  if (e.target.value) {
+                    url.set('pass_number', e.target.value)
+                  } else {
+                    url.delete('pass_number')
+                  }
+                  if (params.room_type) url.set('room_type', params.room_type)
+                  window.location.search = url.toString()
+                }}
+                className="appearance-none px-3 py-2 pr-8 border border-stone-300 rounded-lg bg-white text-stone-700 text-sm focus:outline-none focus:ring-2 focus:ring-stone-900 cursor-pointer"
+              >
+                <option value="">All Passes</option>
+                {passNumbers.map((pn) => (
+                  <option key={pn} value={pn}>
+                    Pass {pn}
+                  </option>
+                ))}
+              </select>
+              <svg className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 9l6 6 6-6" />
+              </svg>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Results */}
-      {templates.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12 text-center">
-          <div className="text-6xl mb-4">📝</div>
-          <h2 className="text-xl font-semibold text-stone-900 mb-2">
+      {(templates ?? []).length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <svg className="w-12 h-12 text-stone-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+          </svg>
+          <h2 className="text-base font-semibold text-stone-700 mb-1">
             No templates found
           </h2>
-          <p className="text-stone-600 max-w-md mb-4">
+          <p className="text-stone-400 text-sm max-w-md mb-5">
             Try adjusting your filters or create a new template to get started
           </p>
           <Link
@@ -147,8 +150,8 @@ export default async function TemplatesPage({
           </Link>
         </div>
       ) : (
-        <div className="space-y-4">
-          {templates.map((template) => (
+        <div className="space-y-3">
+          {(templates ?? []).map((template) => (
             <TemplateCard key={template.id} template={template} />
           ))}
         </div>

@@ -4,14 +4,28 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 
+// ─── Nav Items ───────────────────────────────────────────────────────────────
+
 const NAV_ITEMS = [
   {
-    href: '/dashboard',
+    href: '/',
     label: 'Pipeline',
     icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/>
-        <rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <rect width="7" height="9" x="3" y="3" rx="1.5"/>
+        <rect width="7" height="5" x="14" y="3" rx="1.5"/>
+        <rect width="7" height="9" x="14" y="12" rx="1.5"/>
+        <rect width="7" height="5" x="3" y="16" rx="1.5"/>
+      </svg>
+    ),
+  },
+  {
+    href: '/my-work',
+    label: 'My Work',
+    icon: (
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+        <circle cx="12" cy="7" r="4"/>
       </svg>
     ),
   },
@@ -19,8 +33,9 @@ const NAV_ITEMS = [
     href: '/projects/new',
     label: 'New Project',
     icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M5 12h14"/><path d="M12 5v14"/>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="9"/>
+        <path d="M8 12h8M12 8v8"/>
       </svg>
     ),
   },
@@ -28,8 +43,9 @@ const NAV_ITEMS = [
     href: '/library/templates',
     label: 'Templates',
     icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="2"/>
+        <path d="M3 9h18M9 21V9"/>
       </svg>
     ),
   },
@@ -37,9 +53,9 @@ const NAV_ITEMS = [
     href: '/library/vault',
     label: 'Style Vault',
     icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
         <path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"/>
-        <path d="M7 7h.01"/>
+        <circle cx="7" cy="7" r="1.5" fill="currentColor" stroke="none"/>
       </svg>
     ),
   },
@@ -47,52 +63,189 @@ const NAV_ITEMS = [
     href: '/analytics',
     label: 'Analytics',
     icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/>
-        <line x1="6" x2="6" y1="20" y2="14"/>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 3v18h18"/>
+        <path d="M7 16l4-6 4 4 4-8"/>
       </svg>
     ),
   },
 ]
 
+const BOTTOM_ITEMS = [
+  {
+    href: '/settings',
+    label: 'Settings',
+    icon: (
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+        <circle cx="12" cy="12" r="3"/>
+      </svg>
+    ),
+  },
+]
+
+// ─── Component ───────────────────────────────────────────────────────────────
+
 export function Sidebar() {
   const pathname = usePathname()
 
+  function isActive(href: string) {
+    return href === '/'
+      ? pathname === '/'
+      : pathname === href || pathname.startsWith(href + '/')
+  }
+
   return (
-    <aside className="w-56 min-h-screen bg-stone-900 flex flex-col flex-shrink-0">
-      {/* Logo */}
-      <div className="px-5 py-5 border-b border-stone-700">
-        <span className="text-white font-semibold text-lg tracking-tight">Houspire</span>
-        <span className="text-stone-400 text-xs block mt-0.5">Staging Ops</span>
+    <aside
+      className="flex flex-col flex-shrink-0 h-full"
+      style={{
+        width: 220,
+        background: 'var(--sidebar-bg)',
+        borderRight: '1px solid var(--sidebar-border)',
+      }}
+    >
+      {/* ── Brand mark ──────────────────────────────────────── */}
+      <div
+        className="flex-shrink-0 px-5 py-5"
+        style={{ borderBottom: '1px solid var(--sidebar-border)' }}
+      >
+        {/* Wordmark row */}
+        <div className="flex items-center gap-2.5 mb-0.5">
+          {/* Icon mark */}
+          <div
+            className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+            style={{ background: 'linear-gradient(135deg, #C4913A 0%, #D4A84B 100%)' }}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+              <polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+          </div>
+          <div>
+            <p className="text-white text-[13px] font-bold leading-none tracking-tight">Houspire</p>
+          </div>
+        </div>
+        {/* Sub-label */}
+        <p
+          className="text-[10px] font-semibold uppercase tracking-[0.12em] ml-[37px]"
+          style={{ color: 'var(--sidebar-active)', opacity: 0.7 }}
+        >
+          Staging Ops
+        </p>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 px-3 py-4 space-y-1">
+      {/* ── Main navigation ─────────────────────────────────── */}
+      <nav className="flex-1 overflow-y-auto min-h-0 px-3 py-4 space-y-0.5 scrollbar-dark">
+        {/* Section label */}
+        <p
+          className="text-[9px] font-bold uppercase tracking-[0.14em] px-2.5 mb-2"
+          style={{ color: 'var(--sidebar-text)' }}
+        >
+          Workspace
+        </p>
+
         {NAV_ITEMS.map(({ href, label, icon }) => {
-          const isActive =
-            pathname === href ||
-            (href !== '/dashboard' && pathname.startsWith(href))
+          const active = isActive(href)
           return (
             <Link
               key={href}
               href={href}
               className={cn(
-                'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
-                isActive
-                  ? 'bg-stone-700 text-white'
-                  : 'text-stone-400 hover:bg-stone-800 hover:text-stone-100'
+                'flex items-center gap-3 px-2.5 py-2 rounded-lg text-sm font-medium transition-all duration-150 cursor-pointer min-h-[36px]',
               )}
+              style={
+                active
+                  ? {
+                      background: 'var(--sidebar-active-bg)',
+                      color: 'var(--sidebar-active)',
+                    }
+                  : {
+                      color: 'var(--sidebar-text)',
+                    }
+              }
+              onMouseEnter={(e) => {
+                if (!active) {
+                  const el = e.currentTarget
+                  el.style.background = 'var(--sidebar-hover)'
+                  el.style.color = 'var(--sidebar-text-h)'
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!active) {
+                  const el = e.currentTarget
+                  el.style.background = ''
+                  el.style.color = 'var(--sidebar-text)'
+                }
+              }}
             >
-              {icon}
-              {label}
+              <span
+                className="flex-shrink-0 transition-all"
+                style={{ opacity: active ? 1 : 0.65 }}
+              >
+                {icon}
+              </span>
+              <span className="leading-none">{label}</span>
+              {/* Active indicator bar */}
+              {active && (
+                <span
+                  className="ml-auto w-1 h-4 rounded-full flex-shrink-0"
+                  style={{ background: 'var(--sidebar-active)', opacity: 0.7 }}
+                />
+              )}
             </Link>
           )
         })}
       </nav>
 
-      {/* Footer */}
-      <div className="px-5 py-3 border-t border-stone-700">
-        <span className="text-stone-600 text-xs">Staging Module v1.0</span>
+      {/* ── Bottom section: settings + version ──────────────── */}
+      <div
+        className="flex-shrink-0 px-3 py-3 space-y-0.5"
+        style={{ borderTop: '1px solid var(--sidebar-border)' }}
+      >
+        {BOTTOM_ITEMS.map(({ href, label, icon }) => {
+          const active = isActive(href)
+          return (
+            <Link
+              key={href}
+              href={href}
+              className="flex items-center gap-3 px-2.5 py-2 rounded-lg text-[13px] font-medium transition-all duration-150 cursor-pointer"
+              style={
+                active
+                  ? { background: 'var(--sidebar-active-bg)', color: 'var(--sidebar-active)' }
+                  : { color: 'var(--sidebar-text)' }
+              }
+              onMouseEnter={(e) => {
+                if (!active) {
+                  e.currentTarget.style.background = 'var(--sidebar-hover)'
+                  e.currentTarget.style.color = 'var(--sidebar-text-h)'
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!active) {
+                  e.currentTarget.style.background = ''
+                  e.currentTarget.style.color = 'var(--sidebar-text)'
+                }
+              }}
+            >
+              <span style={{ opacity: 0.6 }}>{icon}</span>
+              {label}
+            </Link>
+          )
+        })}
+
+        {/* Version tag */}
+        <div className="px-2.5 pt-2 pb-0.5 flex items-center justify-between">
+          <span
+            className="text-[9px] font-semibold uppercase tracking-widest"
+            style={{ color: 'var(--sidebar-text)', opacity: 0.35 }}
+          >
+            v1.0 — Module 1
+          </span>
+          <span
+            className="w-1.5 h-1.5 rounded-full animate-pulse-dot"
+            style={{ background: 'var(--sidebar-active)', opacity: 0.5 }}
+          />
+        </div>
       </div>
     </aside>
   )

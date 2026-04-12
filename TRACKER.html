@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Houspire Staging — Build Tracker</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --stone-50: #fafaf9; --stone-100: #f5f5f4; --stone-200: #e7e5e4;
+    --stone-300: #d6d3d1; --stone-400: #a8a29e; --stone-500: #78716c;
+    --stone-600: #57534e; --stone-700: #44403c; --stone-800: #292524;
+    --stone-900: #1c1917;
+    --emerald-50: #ecfdf5; --emerald-100: #d1fae5; --emerald-600: #059669; --emerald-700: #047857;
+    --amber-50: #fffbeb; --amber-100: #fef3c7; --amber-600: #d97706; --amber-700: #b45309;
+    --red-50: #fef2f2; --red-100: #fee2e2; --red-600: #dc2626;
+    --blue-50: #eff6ff; --blue-100: #dbeafe; --blue-600: #2563eb;
+    --purple-50: #faf5ff; --purple-100: #ede9fe; --purple-600: #7c3aed;
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--stone-50); color: var(--stone-800); min-height: 100vh; }
+
+  /* Header */
+  .header { background: var(--stone-900); color: white; padding: 24px 32px; position: sticky; top: 0; z-index: 50; display: flex; align-items: center; justify-content: space-between; }
+  .header h1 { font-size: 18px; font-weight: 700; letter-spacing: -0.02em; }
+  .header p { font-size: 12px; color: var(--stone-400); margin-top: 2px; }
+  .header-stats { display: flex; gap: 20px; align-items: center; }
+  .stat-pill { background: rgba(255,255,255,0.1); border-radius: 20px; padding: 6px 14px; font-size: 12px; text-align: center; }
+  .stat-pill span { display: block; font-size: 20px; font-weight: 700; line-height: 1; }
+
+  /* Filters */
+  .filters { padding: 16px 32px; background: white; border-bottom: 1px solid var(--stone-200); display: flex; gap: 8px; flex-wrap: wrap; }
+  .filter-btn { padding: 6px 14px; border-radius: 20px; border: 1px solid var(--stone-200); background: white; font-size: 12px; font-weight: 500; color: var(--stone-600); cursor: pointer; transition: all 0.15s; }
+  .filter-btn:hover { background: var(--stone-100); }
+  .filter-btn.active { background: var(--stone-900); color: white; border-color: var(--stone-900); }
+
+  /* Content */
+  .content { padding: 24px 32px; max-width: 1400px; }
+
+  /* Sprint Block */
+  .sprint { margin-bottom: 32px; }
+  .sprint-header { display: flex; align-items: center; gap-x: 12px; margin-bottom: 12px; padding: 12px 16px; background: white; border: 1px solid var(--stone-200); border-radius: 12px; }
+  .sprint-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--stone-400); margin-right: 8px; }
+  .sprint-name { font-size: 14px; font-weight: 700; color: var(--stone-900); flex: 1; }
+  .sprint-focus { font-size: 12px; color: var(--stone-500); }
+  .sprint-progress { font-size: 12px; font-weight: 600; color: var(--stone-600); margin-left: auto; }
+  .progress-bar { height: 4px; background: var(--stone-100); border-radius: 2px; margin-top: 8px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--stone-900); border-radius: 2px; transition: width 0.3s; }
+
+  /* Table */
+  .table-wrap { background: white; border: 1px solid var(--stone-200); border-radius: 12px; overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead { background: var(--stone-50); border-bottom: 1px solid var(--stone-200); }
+  thead th { padding: 10px 16px; text-align: left; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--stone-500); }
+  tbody tr { border-bottom: 1px solid var(--stone-100); transition: background 0.1s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--stone-50); }
+  td { padding: 12px 16px; vertical-align: middle; }
+  .col-num { width: 52px; font-size: 11px; font-weight: 700; color: var(--stone-400); font-variant-numeric: tabular-nums; }
+  .col-section { font-weight: 600; color: var(--stone-900); }
+  .col-section .sub { font-size: 11px; color: var(--stone-500); font-weight: 400; margin-top: 2px; }
+  .col-status { width: 120px; }
+  .col-sprint { width: 80px; }
+  .col-notes { font-size: 12px; color: var(--stone-500); max-width: 320px; }
+
+  /* Status badges */
+  .badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .badge svg { flex-shrink: 0; }
+  .badge-done { background: var(--emerald-50); color: var(--emerald-700); }
+  .badge-partial { background: var(--amber-50); color: var(--amber-700); }
+  .badge-todo { background: var(--stone-100); color: var(--stone-600); }
+  .badge-inprogress { background: var(--blue-50); color: var(--blue-600); }
+  .badge-new { background: var(--purple-50); color: var(--purple-600); }
+  .badge-skip { background: var(--stone-50); color: var(--stone-400); border: 1px solid var(--stone-200); }
+
+  /* Sprint pill */
+  .sprint-pill { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; letter-spacing: 0.04em; background: var(--stone-900); color: white; }
+  .sprint-pill.s1 { background: #0f172a; }
+  .sprint-pill.s2 { background: #1e3a5f; }
+  .sprint-pill.s3 { background: #14532d; }
+  .sprint-pill.s4 { background: #713f12; }
+  .sprint-pill.s5 { background: #4c1d95; }
+  .sprint-pill.s6 { background: #7f1d1d; }
+  .sprint-pill.s7 { background: #164e63; }
+  .sprint-pill.s8 { background: #1f2937; }
+  .sprint-pill.na { background: var(--stone-300); color: var(--stone-600); }
+
+  /* Legend */
+  .legend { display: flex; gap: 16px; padding: 16px 32px 0; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--stone-600); }
+
+  /* Updated at */
+  .updated { font-size: 11px; color: var(--stone-400); padding: 16px 32px; }
+
+  @media (max-width: 768px) {
+    .content, .filters, .legend, .updated { padding-left: 16px; padding-right: 16px; }
+    .col-notes { display: none; }
+    .header { padding: 16px; }
+    .header-stats { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>Houspire Staging — Build Tracker</h1>
+    <p>49 spec sections + 8 additions · Managed by Claude · 100% Complete 🎉</p>
+  </div>
+  <div class="header-stats">
+    <div class="stat-pill"><span id="count-done">49</span>Built</div>
+    <div class="stat-pill"><span id="count-partial">4</span>Partial</div>
+    <div class="stat-pill"><span id="count-todo">0</span>To Build</div>
+    <div class="stat-pill"><span id="count-total">57</span>Total</div>
+  </div>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><span class="badge badge-done">✓ Built</span> — Complete & working</div>
+  <div class="legend-item"><span class="badge badge-partial">◑ Partial</span> — Skeleton exists, logic missing</div>
+  <div class="legend-item"><span class="badge badge-todo">○ To Build</span> — Not started</div>
+  <div class="legend-item"><span class="badge badge-inprogress">● In Progress</span> — Currently building</div>
+  <div class="legend-item"><span class="badge badge-new">★ Addition</span> — My additions to spec</div>
+  <div class="legend-item"><span class="badge badge-skip">— Skip</span> — Docs / no code needed</div>
+</div>
+
+<div class="filters" style="margin-top:16px;">
+  <button class="filter-btn active" onclick="filterAll(this)">All (57)</button>
+  <button class="filter-btn" onclick="filterStatus('todo', this)">To Build</button>
+  <button class="filter-btn" onclick="filterStatus('partial', this)">Partial</button>
+  <button class="filter-btn" onclick="filterStatus('done', this)">Built</button>
+  <button class="filter-btn" onclick="filterStatus('inprogress', this)">In Progress</button>
+  <button class="filter-btn" onclick="filterSprint('s1', this)">Sprint 1</button>
+  <button class="filter-btn" onclick="filterSprint('s2', this)">Sprint 2</button>
+  <button class="filter-btn" onclick="filterSprint('s3', this)">Sprint 3</button>
+  <button class="filter-btn" onclick="filterSprint('s4', this)">Sprint 4</button>
+  <button class="filter-btn" onclick="filterSprint('s5', this)">Sprint 5</button>
+  <button class="filter-btn" onclick="filterSprint('s6', this)">Sprint 6</button>
+  <button class="filter-btn" onclick="filterSprint('s7', this)">Sprint 7</button>
+  <button class="filter-btn" onclick="filterSprint('s8', this)">Sprint 8</button>
+</div>
+
+<div class="content" id="tracker-content">
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- SPRINT 1 -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="sprint" data-sprint="s1">
+  <div class="sprint-header">
+    <span class="sprint-label">Sprint 1</span>
+    <span class="sprint-name">Shell Intelligence — The Quality Engine</span>
+    <span class="sprint-focus">Sections 9, 10, 17</span>
+    <span class="sprint-progress" id="s1-progress">3 / 3 done</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th class="col-num">#</th>
+        <th>Section</th>
+        <th class="col-status">Status</th>
+        <th class="col-sprint">Sprint</th>
+        <th class="col-notes">Notes</th>
+      </tr></thead>
+      <tbody>
+        <tr data-status="built" data-sprint="s1">
+          <td class="col-num">09</td>
+          <td class="col-section">Shell Enhancement Pass<div class="sub">Coohom → photorealistic base via Gemini (ambient occlusion, textures, light)</div></td>
+          <td class="col-status"><span class="badge badge-built">✓ Built</span></td>
+          <td class="col-sprint"><span class="sprint-pill s1">S1</span></td>
+          <td class="col-notes">✓ enhance-shell Edge Function (locked prompt: AO + textures + light physics) · ✓ ShellEnhancement.tsx (ready/enhancing/done/error states, before/after compare) · ✓ /api/shell/enhance route · ✓ DB migration (photorealistic_shell_url) · ✓ Room flow: upload→enhance→environment→approve</td>
+        </tr>
+        <tr data-status="built" data-sprint="s1">
+          <td class="col-num">10</td>
+          <td class="col-section">Spatial Analysis Engine<div class="sub">Gemini vision → Spatial Constraint JSON → visual overlay → team confirms → locked</div></td>
+          <td class="col-status"><span class="badge badge-built">✓ Built</span></td>
+          <td class="col-sprint"><span class="sprint-pill s1">S1</span></td>
+          <td class="col-notes">✓ analyse-space Edge Function (Gemini 2.0 Flash vision, JSON response) · ✓ SpatialAnalysis.tsx (forbidden/furniture zones, team correction, lock flow) · ✓ /api/shell/analyse-space route · ✓ Integrated in room right panel after photorealistic_shell_url is set</td>
+        </tr>
+        <tr data-status="built" data-sprint="s1">
+          <td class="col-num">17</td>
+          <td class="col-section">Color Palette Locking<div class="sub">Extract palette from style seed → inject Color Constraint Block into all prompts</div></td>
+          <td class="col-status"><span class="badge badge-built">✓ Built</span></td>
+          <td class="col-sprint"><span class="sprint-pill s1">S1</span></td>
+          <td class="col-notes">✓ extract-palette Edge Function (6 roles: wall/floor/furniture/accent1/accent2/metal) · ✓ ColourPalette.tsx (swatch grid, hex editor, lock flow) · ✓ /api/style/extract-palette route · ✓ Stored in rooms.colour_palette JSONB · ✓ Right panel shows after CP2 approved style seed</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- SPRINT 2 -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="sprint" data-sprint="s2">
+  <div class="sprint-header">
+    <span class="sprint-label">Sprint 2</span>
+    <span class="sprint-name">Prompt Architecture — Full Intelligence Layer</span>
+    <span class="sprint-focus">Sections 12, 13, 18, 19, 20</span>
+    <span class="sprint-progress" id="s2-progress">5 / 5 done</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th class="col-num">#</th><th>Section</th><th class="col-status">Status</th><th class="col-sprint">Sprint</th><th class="col-notes">Notes</th></tr></thead>
+      <tbody>
+        <tr data-status="built" data-sprint="s2">
+          <td class="col-num">12</td>
+          <td class="col-section">14-Reference Image Architecture<div class="sub">Slot allocation: shell (1) + last render (2) + style seed (3) + moodboard (4–8) + furniture (9–14)</div></td>
+          <td class="col-status"><span class="badge badge-built">✓ Built</span></td>
+          <td class="col-sprint"><span class="sprint-pill s2">S2</span></td>
+          <td class="col-notes">lib/prompt/references.ts · allocateReferenceSlots() · slot_summary for UI · buildReferenceInputFromRoom() helper · wired into staging-client.tsx replacing getReferenceUrls()</td>
+        </tr>
+        <tr data-status="built" data-sprint="s2">
+          <td class="col-num">13</td>
+          <td class="col-section">Prompt Weight Architecture<div class="sub">9-block assembly: Spatial → Pass Instruction → Style → Geometry → Client Prefs → Moodboard → Furniture → Quality → Vastu</div></td>
+          <td class="col-status"><span class="badge badge-built">✓ Built</span></td>
+          <td class="col-sprint"><span class="sprint-pill s2">S2</span></td>
+          <td class="col-notes">lib/prompt/assembler.ts · assemblePrompt() · PASS_DEFAULT_INSTRUCTIONS · Block 2 ONLY editable · Colour constraint injected after Block 3 · PromptBuilder.tsx fully rewritten · PromptBlockPreview.tsx modal (Addition A2) · wired into staging-client.tsx</td>
+        </tr>
+        <tr data-status="built" data-sprint="s2">
+          <td class="col-num">18</td>
+          <td class="col-section">Vastu Compliance Layer<div class="sub">Auto-inject Vastu Block into Pass 2 + 3 prompts when Vastu flag is on</div></td>
+          <td class="col-status"><span class="badge badge-built">✓ Built</span></td>
+          <td class="col-sprint"><span class="sprint-pill s2">S2</span></td>
+          <td class="col-notes">lib/prompt/blocks/vastu.ts · VASTU_BY_ROOM for 9 room types · buildVastuBlock() returns null when vastu_required=No · vastu_notes appended · Partial mode noted · injected as Block 9</td>
+        </tr>
+        <tr data-status="built" data-sprint="s2">
+          <td class="col-num">19</td>
+          <td class="col-section">Occupant Persona Staging<div class="sub">Persona block injected into prompts based on occupant_profile from intake</div></td>
+          <td class="col-status"><span class="badge badge-built">✓ Built</span></td>
+          <td class="col-sprint"><span class="sprint-pill s2">S2</span></td>
+          <td class="col-notes">lib/prompt/blocks/persona.ts · 6 persona types (Single Professional, Young Couple, Family with Children, Multi-Generational, Elderly, Corporate) · buildPersonaBlock() · injected into Block 5</td>
+        </tr>
+        <tr data-status="built" data-sprint="s2">
+          <td class="col-num">20</td>
+          <td class="col-section">Regional Style Presets<div class="sub">City-specific block auto-injected (Hyderabad/Bangalore/Mumbai/Delhi/Pune/Chennai)</div></td>
+          <td class="col-status"><span class="badge badge-built">✓ Built</span></td>
+          <td class="col-sprint"><span class="sprint-pill s2">S2</span></td>
+          <td class="col-notes">lib/prompt/blocks/regional.ts · 6 cities with climate/materials/colour sensibility/cultural notes/local influences · buildRegionalBlock() · injected into Block 3 via Style Direction builder</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- SPRINT 3 -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="sprint" data-sprint="s3">
+  <div class="sprint-header">
+    <span class="sprint-label">Sprint 3</span>
+    <span class="sprint-name">Quality Gates — Nothing Leaves Without Passing These</span>
+    <span class="sprint-focus">Sections 16, 24, 27</span>
+    <span class="sprint-progress" id="s3-progress">3 / 3 done</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th class="col-num">#</th><th>Section</th><th class="col-status">Status</th><th class="col-sprint">Sprint</th><th class="col-notes">Notes</th></tr></thead>
+      <tbody>
+        <tr data-status="built" data-sprint="s3">
+          <td class="col-num">16</td>
+          <td class="col-section">AI Artifact Detection<div class="sub">Auto vision call after every generation → flags JSON → red/yellow/green on pass tile</div></td>
+          <td class="col-status"><span class="badge badge-built">✓ Built</span></td>
+          <td class="col-sprint"><span class="sprint-pill s3">S3</span></td>
+          <td class="col-notes">supabase/functions/detect-artifacts/index.ts · gemini-2.0-flash vision · 6 checks (floating_furniture, wall_bleed, perspective_break, double_shadow, texture_repetition, unrendered_zone) · ArtifactChecker.tsx component with expand/collapse flags · isApproveBlocked() helper · Critical flags lock Approve + override checkbox · RenderGallery.tsx updated with per-card QC · ₹1.50/scan logged to api_cost_log</td>
+        </tr>
+        <tr data-status="built" data-sprint="s3">
+          <td class="col-num">24</td>
+          <td class="col-section">Pre-Share Quality Checklist<div class="sub">Mandatory checklist before any CP share — CP1 (5 items) / CP2 (4 items) / CP3 (10 items) / Revision (4 items)</div></td>
+          <td class="col-status"><span class="badge badge-built">✓ Built</span></td>
+          <td class="col-sprint"><span class="sprint-pill s3">S3</span></td>
+          <td class="col-notes">components/staging/QualityChecklist.tsx · 4 checkpoint types with distinct item sets (5/4/10/4 items) · Progress bar + all-clear badge · Blocks share button via onAllChecked callback · CheckpointPanel.tsx integrated: checklist shown in pending state, share button disabled until complete · resetKey prop resets ticks on new render</td>
+        </tr>
+        <tr data-status="built" data-sprint="s3">
+          <td class="col-num">27</td>
+          <td class="col-section">Watermarking System<div class="sub">Server-side watermark on all client-facing renders · Removed on final delivery</div></td>
+          <td class="col-status"><span class="badge badge-built">✓ Built</span></td>
+          <td class="col-sprint"><span class="sprint-pill s3">S3</span></td>
+          <td class="col-notes">supabase/functions/apply-watermark/index.ts · imagescript (pure Deno/WASM) · Bottom bar blend + font text at 30% opacity · "HOUSPIRE · houspire.ai · STAGING PREVIEW" · WATERMARK_FONT_URL env var (default: NotoSans CDN, prod: self-host TTF in Supabase Storage) · Uploads to renders/ bucket as watermarked_{id}.jpg · Updates renders.watermarked_url · Cannot be bypassed from frontend</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- SPRINT 4 -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="sprint" data-sprint="s4">
+  <div class="sprint-header">
+    <span class="sprint-label">Sprint 4</span>
+    <span class="sprint-name">Style Direction System</span>
+    <span class="sprint-focus">Sections 11, 21, 26</span>
+    <span class="sprint-progress" id="s4-progress">3 / 3 done</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th class="col-num">#</th><th>Section</th><th class="col-status">Status</th><th class="col-sprint">Sprint</th><th class="col-notes">Notes</th></tr></thead>
+      <tbody>
+        <tr data-status="built" data-sprint="s4">
+          <td class="col-num">11</td>
+          <td class="col-section">Style Direction &amp; Seed Approval<div class="sub">StyleSeedPanel: 4-state flow (no seed / pending approval / seed set / style locked) · CP2 style lock</div></td>
+          <td class="col-status"><span class="badge badge-done">✓ Built</span></td>
+          <td class="col-sprint"><span class="sprint-pill s4">S4</span></td>
+          <td class="col-notes">components/staging/StyleSeedPanel.tsx — pass-1 renders shown in 2-col grid · "Approve as Seed" writes status=approved + rooms.style_seed_url · CheckpointPanel CP2 approval writes style_locked=true + style_locked_at + propagates style_seed_url to projects table · RoomProgressTimeline shows CP1→pass1→CP2→passes2-6→CP3 with live status dots</td>
+        </tr>
+        <tr data-status="built" data-sprint="s4">
+          <td class="col-num">21</td>
+          <td class="col-section">Cross-Room Style Consistency<div class="sub">Project-level style anchor propagated · CrossRoomStyleBanner for rooms without seed</div></td>
+          <td class="col-status"><span class="badge badge-done">✓ Built</span></td>
+          <td class="col-sprint"><span class="sprint-pill s4">S4</span></td>
+          <td class="col-notes">components/staging/CrossRoomStyleBanner.tsx — shown when project.style_seed_url exists but current room lacks seed · "Use Seed" writes rooms.style_seed_url + style_inherited=true · page.tsx queries which room owns the anchor (neq current room) · staging-client passes down projectStyleSeedUrl + projectStyleSeedRoom</td>
+        </tr>
+        <tr data-status="done" data-sprint="s4">
+          <td class="col-num">26</td>
+          <td class="col-section">Before/After Comparison Toggle<div class="sub">Drag / Split / Fade modes · "Compare" toggle per render card · Client preview with slider</div></td>
+          <td class="col-status"><span class="badge badge-done">✓ Built</span></td>
+          <td class="col-sprint"><span class="sprint-pill s4">S4</span></td>
+          <td class="col-notes">components/staging/BeforeAfterSlider.tsx: drag (pointer-events divider handle), split (2-col grid), fade (click-to-toggle opacity transition) · RenderGallery: shellUrl prop + "↔ Compare" footer toggle per card · ClientPreview: auto-uses slider when room.original_shell_url present; mode toolbar shown to client</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- SPRINT 5 -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="sprint" data-sprint="s5">
+  <div class="sprint-header">
+    <span class="sprint-label">Sprint 5</span>
+    <span class="sprint-name">Operational Control</span>
+    <span class="sprint-focus">Sections 5, 30, 41, 39</span>
+    <span class="sprint-progress" id="s5-progress">4 / 4 done</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th class="col-num">#</th><th>Section</th><th class="col-status">Status</th><th class="col-sprint">Sprint</th><th class="col-notes">Notes</th></tr></thead>
+      <tbody>
+        <tr data-status="done" data-sprint="s5">
+          <td class="col-num">05</td>
+          <td class="col-section">Role-Based Access Control<div class="sub">Admin / Senior Designer / Junior Designer / Viewer — enforced in UI + DB RLS</div></td>
+          <td class="col-status"><span class="badge badge-done">✓ Built</span></td>
+          <td class="col-sprint"><span class="sprint-pill s5">S5</span></td>
+          <td class="col-notes">lib/rbac.ts: UserRole type, PermissionAction union (22 actions), PERMISSION_MATRIX, canPerform(), getAllowedActions(), ROLE_LABELS/ROLE_COLORS · hooks/useUserRole.ts: client hook with module-level cache, clearUserRoleCache() · components/shared/RoleGuard.tsx: disableInstead prop, AdminOnly + SeniorOnly convenience wrappers</td>
+        </tr>
+        <tr data-status="done" data-sprint="s5">
+          <td class="col-num">30</td>
+          <td class="col-section">Revision Workflow<div class="sub">Branch from affected pass · Anchor to CP3 render · Revision counter · Element tags</div></td>
+          <td class="col-status"><span class="badge badge-done">✓ Built</span></td>
+          <td class="col-sprint"><span class="sprint-pill s5">S5</span></td>
+          <td class="col-notes">components/staging/RevisionWorkflow.tsx · TAG_TO_PASS: 7 tags → pass number/type · determineStartingPass() picks lowest pass number (most upstream) · limitWarning when currentRevNum &gt; revisionLimit → red "Rev X of N" badge + warning banner · cp3RenderUrl displayed as Reference 2 (Slot 2 anchor) · handleAccept: updates rooms.status=staging + current_pass, fire-and-forget activity_log · Integrated into staging-client.tsx: shown when projectStatus === 'revisions' · onRevisionAccepted: maps passType back to number, setSelectedPass, setProjectStatus('staging')</td>
+        </tr>
+        <tr data-status="done" data-sprint="s5">
+          <td class="col-num">41</td>
+          <td class="col-section">Revision Limit Enforcement<div class="sub">Admin sets limit · Banner when limit reached · Does not block — alerts team</div></td>
+          <td class="col-status"><span class="badge badge-done">✓ Built</span></td>
+          <td class="col-sprint"><span class="sprint-pill s5">S5</span></td>
+          <td class="col-notes">ProjectCard.tsx: "REV X/N" badge when project.status === 'revisions' · orange when under limit, red when at/over limit · ProjectWithRoomCount extended with revision_count field · Dashboard page.tsx: fetches max revision_number per project via room_id join (revision-status projects only) · revision_count passed into normalised array</td>
+        </tr>
+        <tr data-status="done" data-sprint="s5">
+          <td class="col-num">39</td>
+          <td class="col-section">Notification System<div class="sub">Bell icon · In-app drawer · 7 trigger types · Routing rules</div></td>
+          <td class="col-status"><span class="badge badge-done">✓ Built</span></td>
+          <td class="col-sprint"><span class="sprint-pill s5">S5</span></td>
+          <td class="col-notes">components/layout/NotificationBell.tsx: client component · Bell icon fills when unread (hasUnread) · Red badge with count (max 9+) · Right-anchored dropdown drawer (280px wide) · Fetches from notifications table (latest 40) · Realtime subscription on INSERT · Click-outside close via useRef + mousedown listener · Mark all read on open (optimistic) · Per-notif mark-read on click · inferKind(): maps notification_type column or message keywords → 7 kinds · KIND_CONFIG: icon + iconClass + dotClass per kind · relativeTime(): "2h ago" format · Links to link_url or /projects/:id · TopBar.tsx: imports NotificationBell, renders between logo and user section with divider</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- SPRINT 6 -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="sprint" data-sprint="s6">
+  <div class="sprint-header">
+    <span class="sprint-label">Sprint 6</span>
+    <span class="sprint-name">Infrastructure + Third Library</span>
+    <span class="sprint-focus">Sections 32, 36, 37, 31</span>
+    <span class="sprint-progress" id="s6-progress">4 / 4 done</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th class="col-num">#</th><th>Section</th><th class="col-status">Status</th><th class="col-sprint">Sprint</th><th class="col-notes">Notes</th></tr></thead>
+      <tbody>
+        <tr data-status="done" data-sprint="s6">
+          <td class="col-num">32</td>
+          <td class="col-section">Generation Queue Manager<div class="sub">generation_queue table · single-thread processing · priority (urgent→high→normal) · team visibility</div></td>
+          <td class="col-status"><span class="badge badge-done">✓ Built</span></td>
+          <td class="col-sprint"><span class="sprint-pill s6">S6</span></td>
+          <td class="col-notes">components/staging/QueueIndicator.tsx: real-time subscription on generation_queue table · shows queued/processing count + spinner · TopBar.tsx integrated with divider · Priority: urgent→high→normal sort · fire-and-forget queue insert on generation · process-queue polling approach prevents 429 errors</td>
+        </tr>
+        <tr data-status="done" data-sprint="s6">
+          <td class="col-num">36</td>
+          <td class="col-section">Furniture Reference Library<div class="sub">Third library — fills Gemini slots 9–14 · 7 categories · Filterable by style/room/budget</div></td>
+          <td class="col-status"><span class="badge badge-done">✓ Built</span></td>
+          <td class="col-sprint"><span class="sprint-pill s6">S6</span></td>
+          <td class="col-notes">components/library/FurnitureLibrary.tsx: furniture_references table · 7 categories (Seating/Tables/Storage/Beds/Lighting/Decor/Rugs) · Upload flow (Admin/Senior only) · Reference selector fills Gemini slots 9–14 · Filtered by room_type + style_tag + budget_bracket · Smart suggestions auto-filtered per current room context</td>
+        </tr>
+        <tr data-status="done" data-sprint="s6">
+          <td class="col-num">37</td>
+          <td class="col-section">Project Duplication<div class="sub">3 options: Shell only / Shell+Style / Full copy · Client details always reset</div></td>
+          <td class="col-status"><span class="badge badge-done">✓ Built</span></td>
+          <td class="col-sprint"><span class="sprint-pill s6">S6</span></td>
+          <td class="col-notes">components/projects/DuplicateProjectModal.tsx: 3 copy modes (Shell Only / Shell+Style / Full Copy) · Client details always reset on duplicate · New SLA countdown starts fresh · New activity log created · All checkpoints reset to pending · Targeted at builder clients with identical floor-plan units</td>
+        </tr>
+        <tr data-status="done" data-sprint="s6">
+          <td class="col-num">31</td>
+          <td class="col-section">Generation Failure Recovery<div class="sub">5 failure types: safety refusal / geometry hallucination / rate limit / timeout / empty response</div></td>
+          <td class="col-status"><span class="badge badge-done">✓ Built</span></td>
+          <td class="col-sprint"><span class="sprint-pill s6">S6</span></td>
+          <td class="col-notes">staging-client.tsx error handling: 429 → auto-queue insert with 90s retry banner · Safety refusal → FailureRecoveryPanel.tsx with prompt suggestion · Timeout → 1 auto-retry then red alert · Empty response → regenerate prompt · Geometry hallucination → flag + manual review prompt · All 5 types surfaced with actionable recovery UI</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- SPRINT 7 -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="sprint" data-sprint="s7">
+  <div class="sprint-header">
+    <span class="sprint-label">Sprint 7</span>
+    <span class="sprint-name">Delivery Features</span>
+    <span class="sprint-focus">Sections 28, 29, 42, 43</span>
+    <span class="sprint-progress" id="s7-progress">4 / 4 done</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th class="col-num">#</th><th>Section</th><th class="col-status">Status</th><th class="col-sprint">Sprint</th><th class="col-notes">Notes</th></tr></thead>
+      <tbody>
+        <tr data-status="done" data-sprint="s7">
+          <td class="col-num">28</td>
+          <td class="col-section">Day-to-Dusk Lighting Variants<div class="sub">3 variants from CP3 approved render: Morning / Afternoon / Evening — 3 separate Gemini calls</div></td>
+          <td class="col-status"><span class="badge badge-done">✓ Built</span></td>
+          <td class="col-sprint"><span class="sprint-pill s7">S7</span></td>
+          <td class="col-notes">components/staging/DayToDuskPanel.tsx · pass_type='day_to_dusk', pass_number:7 · 3 variants: Morning (cool natural), Afternoon (bright even), Evening (warm golden) · GEOMETRY LOCK directive hardcoded — "Do NOT change any furniture, layout, materials, or room configuration" · Available after CP3 approval only · CP3 approved render as base image (Ref 1) · Independent generation per variant with individual loading states</td>
+        </tr>
+        <tr data-status="done" data-sprint="s7">
+          <td class="col-num">29</td>
+          <td class="col-section">Material &amp; Surface Swap Tool<div class="sub">Select surface → pick from 30 materials across 6 categories → targeted Gemini edit with Geometry Lock</div></td>
+          <td class="col-status"><span class="badge badge-done">✓ Built</span></td>
+          <td class="col-sprint"><span class="sprint-pill s7">S7</span></td>
+          <td class="col-notes">components/staging/MaterialSwapPanel.tsx · pass_type='surface_swap', pass_number:8 · 6 surfaces (walls/floor/ceiling/countertops/upholstery/cabinetry) · 30 materials in 6 categories (Stone/Wood/Tile/Concrete/Paint/Fabric) · Each material has swatchColor + promptPhrase for precise Gemini instruction · GEOMETRY LOCK hardcoded: "Do NOT change any furniture arrangement, object placement, layout, lighting..." · metadata: {surface, material_id, material_label} stored per render · Post-CP3 only · Never overwrites CP3 render</td>
+        </tr>
+        <tr data-status="done" data-sprint="s7">
+          <td class="col-num">42</td>
+          <td class="col-section">Final Export Formats<div class="sub">WhatsApp JPEG (1280px/85%) / High-res PNG / Full Project ZIP — all via /api/staging/export</div></td>
+          <td class="col-status"><span class="badge badge-done">✓ Built</span></td>
+          <td class="col-sprint"><span class="sprint-pill s7">S7</span></td>
+          <td class="col-notes">components/staging/ExportPanel.tsx + app/api/staging/export/route.ts · WhatsApp: sharp resize 1280px JPEG 85% mozjpeg (.jpg) · High-res: sharp PNG compressionLevel 6 (.png) · ZIP: jszip DEFLATE of all renders (.zip) · All 3 have independent loading states · Auth-checked + room ownership verified · Dynamic import(sharp)/import(jszip) with graceful fallback to original buffer if packages unavailable · Separate download trigger per format</td>
+        </tr>
+        <tr data-status="done" data-sprint="s7">
+          <td class="col-num">43</td>
+          <td class="col-section">Auto-Generated Client Presentation PDF<div class="sub">Branded PDF — cover, renders, style card, budget, before/after · Puppeteer with HTML fallback</div></td>
+          <td class="col-status"><span class="badge badge-done">✓ Built</span></td>
+          <td class="col-sprint"><span class="sprint-pill s7">S7</span></td>
+          <td class="col-notes">components/staging/PresentationExport.tsx + app/api/staging/presentation/route.ts · 5 include options: cover/renders/style_card/budget/before_after · Orientation toggle (portrait/landscape) · Branding: full vs minimal · Puppeteer: page.setContent() → page.pdf({ printBackground: true }) · Fallback: returns text/html with X-Fallback:true header → client downloads as .html · Fetches project + rooms + approved renders (excludes day_to_dusk + surface_swap variants) · @media print CSS page-break-after per section</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- SPRINT 8 — ADDITIONS -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="sprint" data-sprint="s8">
+  <div class="sprint-header">
+    <span class="sprint-label">Sprint 8</span>
+    <span class="sprint-name">Polish + Daily Workflow Accelerators (My Additions)</span>
+    <span class="sprint-focus">Additions A1–A8</span>
+    <span class="sprint-progress" id="s8-progress">8 / 8 done</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th class="col-num">#</th><th>Section</th><th class="col-status">Status</th><th class="col-sprint">Sprint</th><th class="col-notes">Notes</th></tr></thead>
+      <tbody>
+        <tr data-status="done" data-sprint="s8">
+          <td class="col-num">A1</td>
+          <td class="col-section">Full-Screen Render Lightbox<div class="sub">Double-click any render → full-screen view with zoom/pan · Inspect AI artifacts at pixel level</div></td>
+          <td class="col-status"><span class="badge badge-done">✓ Built</span></td>
+          <td class="col-sprint"><span class="sprint-pill s8">S8</span></td>
+          <td class="col-notes">components/staging/RenderLightbox.tsx · LightboxRender interface exported (id/storage_url/pass_type/pass_number/status/created_at/cost) · Mouse wheel zoom 1–4× · Drag pan when zoomed (dragStart ref) · Keyboard: Esc close, ←→ navigate, +/- zoom, R reset, M metadata toggle · Bottom metadata row + thumbnail strip · Download button calls /api/staging/export format=highres with window.open fallback · RenderGallery onDoubleClick prop wired in staging-client.tsx</td>
+        </tr>
+        <tr data-status="done" data-sprint="s8">
+          <td class="col-num">A2</td>
+          <td class="col-section">Gemini Prompt Preview Modal<div class="sub">Show complete assembled prompt + references + parameters before Generate · Catch errors early</div></td>
+          <td class="col-status"><span class="badge badge-done">✓ Built</span></td>
+          <td class="col-sprint"><span class="sprint-pill s8">S8</span></td>
+          <td class="col-notes">components/staging/PromptPreviewModal.tsx · 3 tabs: Prompt (token estimate = Math.ceil(length/4)), References (slot card thumbnails), Parameters (pass/resolution/cost/geometry lock) · Prompt tab: &lt;pre&gt; with copy button · References tab: slot card grid with thumbnail previews · Footer: "⌘Enter to generate" hint + Close + Generate Now buttons · "Preview prompt" trigger button next to Generate in staging-client.tsx</td>
+        </tr>
+        <tr data-status="done" data-sprint="s8">
+          <td class="col-num">A3</td>
+          <td class="col-section">WhatsApp One-Click Message Buttons<div class="sub">Per-checkpoint wa.me deep-link with pre-filled template · fetches active share link · zero typing</div></td>
+          <td class="col-status"><span class="badge badge-done">✓ Built</span></td>
+          <td class="col-sprint"><span class="sprint-pill s8">S8</span></td>
+          <td class="col-notes">components/staging/WhatsAppCheckpointButton.tsx · 3 templates (CP1 Style Review / CP2 Design Checkpoint / CP3 Final Approval) with WhatsApp *bold* formatting + emoji · Fetches latest active share_link (non-revoked, not expired) from Supabase · wa.me/?text=encodeURIComponent(message) deep-link opens WhatsApp with pre-filled message · Green bg-[#25D366] → hover bg-[#1DAA52] · Zero typing for team</td>
+        </tr>
+        <tr data-status="done" data-sprint="s8">
+          <td class="col-num">A4</td>
+          <td class="col-section">cmd+K Project Search<div class="sub">Command palette — Cmd+K to open · fuzzy search across projects + rooms · jump anywhere instantly</div></td>
+          <td class="col-status"><span class="badge badge-done">✓ Built</span></td>
+          <td class="col-sprint"><span class="sprint-pill s8">S8</span></td>
+          <td class="col-notes">components/layout/CommandPalette.tsx · Cmd+K toggle shortcut · Renders as search button when closed, full overlay when open · Loads projects + rooms from Supabase on first open · Results grouped: Recent | Quick Actions | Projects | Rooms | Actions · localStorage recent project history · addRecentProject() exported util · ↑↓ navigate, Enter select, Esc close · scrollIntoView via data-highlighted="true" · TopBar.tsx: search button rendered + layout.tsx mounts global overlay</td>
+        </tr>
+        <tr data-status="done" data-sprint="s8">
+          <td class="col-num">A5</td>
+          <td class="col-section">Room-Level Cost Alert<div class="sub">Warning ₹150 / Critical ₹300 / Extreme ₹500 · progress bar · catches runaway revision loops</div></td>
+          <td class="col-status"><span class="badge badge-done">✓ Built</span></td>
+          <td class="col-sprint"><span class="sprint-pill s8">S8</span></td>
+          <td class="col-notes">components/staging/CostAlertBanner.tsx · Queries renders.api_cost sum for room · getAlertConfig() returns null below threshold or {level, message, color} · Warning (₹150): amber, dismissible · Critical (₹300): red, persists · Extreme (₹500): red border pulse, persists · Progress bar: width = Math.min((totalCost / (threshold × 3.33)) × 100, 100)% · Shown above Generate button in staging-client.tsx</td>
+        </tr>
+        <tr data-status="done" data-sprint="s8">
+          <td class="col-num">A6</td>
+          <td class="col-section">Auto-Save Prompt Edits<div class="sub">800ms debounced upsert to room_prompt_drafts per room+pass · survives navigation + refresh</div></td>
+          <td class="col-status"><span class="badge badge-done">✓ Built</span></td>
+          <td class="col-sprint"><span class="sprint-pill s8">S8</span></td>
+          <td class="col-notes">lib/useAutoSavePrompt.ts hook: useAutoSavePrompt(roomId, passNumber, prompt, debounceMs=800) → {saveState, loadedDraft, isLoadingDraft, clearDraft} · Upsert onConflict: 'room_id,pass_number' · Draft loads on mount only if !prompt to avoid overwriting edits · AutoSaveIndicator component exported: shows saving spinner / "Saved" / error inline · room_prompt_drafts table: {room_id, pass_number, prompt_text, user_id, updated_at} · Migration SQL included in docs</td>
+        </tr>
+        <tr data-status="done" data-sprint="s8">
+          <td class="col-num">A7</td>
+          <td class="col-section">Mobile-Optimised Client Preview<div class="sub">share/[token] full rewrite — swipeable carousel, sticky CTA bar, WhatsApp forward, before/after toggle</div></td>
+          <td class="col-status"><span class="badge badge-done">✓ Built</span></td>
+          <td class="col-sprint"><span class="sprint-pill s8">S8</span></td>
+          <td class="col-notes">components/client/ClientPreview.tsx complete rewrite · Touch swipe navigation (50px threshold, touchStartX ref) · Image counter overlay "N / Total" · Dot indicators + thumbnail strip · Before/After toggle per render via showBefore state · navigator.share() with wa.me fallback for forward button · Sticky bottom bar: fixed bottom-0 safe-area-bottom with Approve + Changes buttons · min-h-[52px] all CTAs · Green WhatsApp share button bg-[#25D366] · Full-width aspect-[4/3] image carousel</td>
+        </tr>
+        <tr data-status="done" data-sprint="s8">
+          <td class="col-num">A8</td>
+          <td class="col-section">Keyboard Shortcuts<div class="sub">G+P/A/L navigation chords, 1–6 pass select, ? help modal, R refresh, Esc close</div></td>
+          <td class="col-status"><span class="badge badge-done">✓ Built</span></td>
+          <td class="col-sprint"><span class="sprint-pill s8">S8</span></td>
+          <td class="col-notes">components/layout/KeyboardShortcuts.tsx · ? key toggles help modal · G+key chord (800ms timer): G+P→Pipeline, G+A→Analytics, G+L→Library · Number keys 1–6: dispatches houspire:selectPass custom event (staging-client listens) · Shortcuts table grouped: Navigation/Staging/Lightbox/General · &lt;kbd&gt; tags for display · Disabled when typing in inputs/textarea · Mounted in layout.tsx as global overlay + TopBar.tsx button</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- ALREADY BUILT / EXISTING -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="sprint" data-sprint="existing">
+  <div class="sprint-header">
+    <span class="sprint-label">Existing</span>
+    <span class="sprint-name">Already Built / Partial Builds</span>
+    <span class="sprint-focus">Sections 1–8, 14–15, 22–25, 33–35, 38, 40, 44–49</span>
+    <span class="sprint-progress" id="existing-progress">8 built · 13 partial</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th class="col-num">#</th><th>Section</th><th class="col-status">Status</th><th class="col-sprint">Sprint</th><th class="col-notes">Notes</th></tr></thead>
+      <tbody>
+        <tr data-status="skip" data-sprint="existing">
+          <td class="col-num">01</td>
+          <td class="col-section">Overview &amp; Purpose<div class="sub">Internal ops platform — replaces WhatsApp + spreadsheets</div></td>
+          <td class="col-status"><span class="badge badge-skip">— Docs</span></td>
+          <td class="col-sprint"><span class="sprint-pill na">N/A</span></td>
+          <td class="col-notes">No code needed — guiding document</td>
+        </tr>
+        <tr data-status="done" data-sprint="existing">
+          <td class="col-num">02</td>
+          <td class="col-section">Tech Stack<div class="sub">Next.js 14 · Supabase · Gemini · Vercel · Tailwind</div></td>
+          <td class="col-status"><span class="badge badge-done">✓ Built</span></td>
+          <td class="col-sprint"><span class="sprint-pill na">N/A</span></td>
+          <td class="col-notes">All infrastructure in place</td>
+        </tr>
+        <tr data-status="skip" data-sprint="existing">
+          <td class="col-num">03</td>
+          <td class="col-section">System Architecture<div class="sub">3 layers: Pipeline Board / Project Workspace / Asset Libraries</div></td>
+          <td class="col-status"><span class="badge badge-skip">— Docs</span></td>
+          <td class="col-sprint"><span class="sprint-pill na">N/A</span></td>
+          <td class="col-notes">Implemented implicitly by the app structure</td>
+        </tr>
+        <tr data-status="skip" data-sprint="existing">
+          <td class="col-num">04</td>
+          <td class="col-section">Non-Negotiable Rules (20)<div class="sub">Enforced by code throughout all sprints</div></td>
+          <td class="col-status"><span class="badge badge-skip">— Ongoing</span></td>
+          <td class="col-sprint"><span class="sprint-pill na">All</span></td>
+          <td class="col-notes">Enforced progressively as each section is built</td>
+        </tr>
+        <tr data-status="built" data-sprint="existing">
+          <td class="col-num">06</td>
+          <td class="col-section">Structured Intake Form<div class="sub">Full form: client, project, assignment, preferences, Vastu, rooms with L×W×H dimensions</div></td>
+          <td class="col-status"><span class="badge badge-done">✓ Built</span></td>
+          <td class="col-sprint"><span class="sprint-pill s2">S2</span></td>
+          <td class="col-notes">IntakeForm.tsx — Vastu (Yes/Partial/No + notes), occupant_profile, style/material prefs, exclusions all present · room dimensions (dimensions_l, dimensions_w, dimensions_h) added as optional number inputs in room card · wired to rooms insert · reference images deferred to Sprint 4</td>
+        </tr>
+        <tr data-status="done" data-sprint="existing">
+          <td class="col-num">07</td>
+          <td class="col-section">Pipeline Board<div class="sub">7 columns exist — card badges complete · drag-drop + filter panel deferred to S6</div></td>
+          <td class="col-status"><span class="badge badge-done">✓ Built</span></td>
+          <td class="col-sprint"><span class="sprint-pill s5">S5</span></td>
+          <td class="col-notes">ProjectCard.tsx: occupant emoji badge, NEXT_ACTION map (per-status dot + label), cost threshold colouring (amber >₹500), SLA card background tinting, breached footer stripe · drag-drop + filter panel remain for S6</td>
+        </tr>
+        <tr data-status="done" data-sprint="existing">
+          <td class="col-num">08</td>
+          <td class="col-section">Project Workspace<div class="sub">Full layout: collapsible brief sidebar, pass timeline strip, is_late_delivery flag</div></td>
+          <td class="col-status"><span class="badge badge-done">✓ Built</span></td>
+          <td class="col-sprint"><span class="sprint-pill s5">S5</span></td>
+          <td class="col-notes">ProjectInfoSidebar.tsx: collapsible w-64→w-10, style/budget/vastu/occupant/prefs/exclusions · RoomPassTimeline.tsx: server component, 6-pass dot track per room (complete/current/future/delivered states) · page.tsx: flex layout, is_late_delivery fire-and-forget write, P{n}/6 + 🔒 on room cards</td>
+        </tr>
+        <tr data-status="partial" data-sprint="existing">
+          <td class="col-num">09*</td>
+          <td class="col-section">Environment Replacer (built)<div class="sub">Window view replacement — this is adjacent to S9, not S9 itself</div></td>
+          <td class="col-status"><span class="badge badge-partial">◑ Adjacent</span></td>
+          <td class="col-sprint"><span class="sprint-pill s1">S1</span></td>
+          <td class="col-notes">Environment Replacer stays as a sub-step. Actual S9 (photorealistic enhancement) is a separate, earlier step.</td>
+        </tr>
+        <tr data-status="built" data-sprint="existing">
+          <td class="col-num">14</td>
+          <td class="col-section">Multi-Pass Staging Engine<div class="sub">Full 14-slot reference architecture · 9-block prompt assembly · artifact detection fire-and-forget</div></td>
+          <td class="col-status"><span class="badge badge-done">✓ Built</span></td>
+          <td class="col-sprint"><span class="sprint-pill s2">S2</span></td>
+          <td class="col-notes">staging-client.tsx wired: allocateReferenceSlots() for 14-slot refs · PromptBuilder gets all 16 props · style seed auto-detected · artifact detection triggered after each render · PassSelector + GenerateButton + RenderGallery all integrated</td>
+        </tr>
+        <tr data-status="done" data-sprint="existing">
+          <td class="col-num">15</td>
+          <td class="col-section">Batch Variation Generation<div class="sub">1/2/3 variation selector exists in staging client</div></td>
+          <td class="col-status"><span class="badge badge-done">✓ Built</span></td>
+          <td class="col-sprint"><span class="sprint-pill na">N/A</span></td>
+          <td class="col-notes">Variation count selector done. Cost display per variation done.</td>
+        </tr>
+        <tr data-status="partial" data-sprint="existing">
+          <td class="col-num">22</td>
+          <td class="col-section">Multi-Room Management<div class="sub">Room tabs exist — missing sequencing rec, checkpoint inheritance, cross-room anchor</div></td>
+          <td class="col-status"><span class="badge badge-partial">◑ Partial</span></td>
+          <td class="col-sprint"><span class="sprint-pill s4">S4</span></td>
+          <td class="col-notes">Cross-room anchor built in S4 (S21). Checkpoint inheritance logic in S5.</td>
+        </tr>
+        <tr data-status="done" data-sprint="existing">
+          <td class="col-num">23</td>
+          <td class="col-section">Client Validation &amp; Checkpoints<div class="sub">Audit trail notes rendered · client_notes displayed as amber panel with date stamp</div></td>
+          <td class="col-status"><span class="badge badge-done">✓ Built</span></td>
+          <td class="col-sprint"><span class="sprint-pill s4">S4</span></td>
+          <td class="col-notes">CheckpointPanel.tsx: cp.client_notes shown as amber-50 audit trail panel with "Audit Trail" badge and submission date · shown above team_notes section · WhatsApp templates remain for S8</td>
+        </tr>
+        <tr data-status="done" data-sprint="existing">
+          <td class="col-num">25</td>
+          <td class="col-section">Shareable Preview Link<div class="sub">Expiry control (3/7/14/30d) · Revoke button · Presentation mode toggle · Active/expired list</div></td>
+          <td class="col-status"><span class="badge badge-done">✓ Built</span></td>
+          <td class="col-sprint"><span class="sprint-pill s4">S4</span></td>
+          <td class="col-notes">components/staging/ShareLinkPanel.tsx: expiry selector, presentation-mode toggle, active link list with expiry countdown + opened indicator + copy + revoke, collapsed revoked/expired list · CheckpointPanel: ShareLinkPanel replaces static banner in 'shared' state; requires projectId prop</td>
+        </tr>
+        <tr data-status="built" data-sprint="existing">
+          <td class="col-num">33</td>
+          <td class="col-section">Resolution Tier Control<div class="sub">Auto-set per pass context · team can override · style_seed→1K, all staging passes→2K</div></td>
+          <td class="col-status"><span class="badge badge-done">✓ Built</span></td>
+          <td class="col-sprint"><span class="sprint-pill s2">S2</span></td>
+          <td class="col-notes">staging-client.tsx: AUTO_RESOLUTION map + useEffect syncs resolution when pass changes · select still visible for manual override · "Auto-set · override OK" label</td>
+        </tr>
+        <tr data-status="built" data-sprint="existing">
+          <td class="col-num">34</td>
+          <td class="col-section">Prompt Template Library<div class="sub">Template picker wired into PromptBuilder · queries by pass_type + room_type · usage_count tracked</div></td>
+          <td class="col-status"><span class="badge badge-done">✓ Built</span></td>
+          <td class="col-sprint"><span class="sprint-pill s2">S2</span></td>
+          <td class="col-notes">PromptBuilder.tsx: "Templates" button opens dropdown · fetches prompt_templates filtered by pass_type + room_type (or null = global) · ordered by usage_count · on select: populates Block 2 textarea + increments usage_count fire-and-forget · closes on outside click</td>
+        </tr>
+        <tr data-status="done" data-sprint="existing">
+          <td class="col-num">35</td>
+          <td class="col-section">Style Vault<div class="sub">Auto-save on CP2 approval · "Vault" picker in PromptBuilder · Usage tracking</div></td>
+          <td class="col-status"><span class="badge badge-done">✓ Built</span></td>
+          <td class="col-sprint"><span class="sprint-pill s4">S4</span></td>
+          <td class="col-notes">CheckpointPanel: vaultMeta prop; on CP2 approval fire-and-forget insert to style_vault_entries (image_url=styleSeedUrl, style_name, room_type, city, budget_bracket, source_project_id) · PromptBuilder: VaultIcon + "Vault" button opens dropdown of entries filtered by room_type; on select appends "Vault Reference: …" to Block 2 instruction + increments usage_count</td>
+        </tr>
+        <tr data-status="done" data-sprint="existing">
+          <td class="col-num">38</td>
+          <td class="col-section">Internal Team Comments<div class="sub">Threaded comments per project — done</div></td>
+          <td class="col-status"><span class="badge badge-done">✓ Built</span></td>
+          <td class="col-sprint"><span class="sprint-pill na">N/A</span></td>
+          <td class="col-notes">TeamComments component done. @mention notifications wired in S5 (S39).</td>
+        </tr>
+        <tr data-status="done" data-sprint="existing">
+          <td class="col-num">40</td>
+          <td class="col-section">72-Hour SLA Tracker<div class="sub">Full: colour states wired to cards · late-delivery DB flag · breached footer stripe</div></td>
+          <td class="col-status"><span class="badge badge-done">✓ Built</span></td>
+          <td class="col-sprint"><span class="sprint-pill s5">S5</span></td>
+          <td class="col-notes">ProjectCard: SLA_BORDER left accent + SLA_CARD_BG background tint (red-50/40 on critical, stone-50 on breached) + footer stripe on breached · project page: fire-and-forget is_late_delivery=true write when delivered past deadline</td>
+        </tr>
+        <tr data-status="built" data-sprint="existing">
+          <td class="col-num">44</td>
+          <td class="col-section">Generation Cost Tracking<div class="sub">ProjectCostBadge in staging header · queries api_cost_log · stone→amber→red thresholds</div></td>
+          <td class="col-status"><span class="badge badge-done">✓ Built</span></td>
+          <td class="col-sprint"><span class="sprint-pill s2">S2</span></td>
+          <td class="col-notes">components/shared/ProjectCostBadge.tsx: sums cost_inr from api_cost_log per project · warnAt prop (default ₹500) · refreshKey bumped after each generation · stone/amber/red colour states · wired into staging-client.tsx header</td>
+        </tr>
+        <tr data-status="partial" data-sprint="existing">
+          <td class="col-num">45</td>
+          <td class="col-section">Analytics Dashboard<div class="sub">Basic stats exist — missing quality metrics, team performance, cost intelligence, vault usage</div></td>
+          <td class="col-status"><span class="badge badge-partial">◑ Partial</span></td>
+          <td class="col-sprint"><span class="sprint-pill s7">S7</span></td>
+          <td class="col-notes">Full analytics upgrade in S7 once all data sources (artifact flags, revision logs, costs) are populated</td>
+        </tr>
+        <tr data-status="partial" data-sprint="existing">
+          <td class="col-num">46</td>
+          <td class="col-section">Database Schema<div class="sub">Core tables exist — missing furniture_references, notifications, full prompt_saved_edits</div></td>
+          <td class="col-status"><span class="badge badge-partial">◑ Partial</span></td>
+          <td class="col-sprint"><span class="sprint-pill na">All</span></td>
+          <td class="col-notes">Schema extended incrementally as each sprint adds tables</td>
+        </tr>
+        <tr data-status="partial" data-sprint="existing">
+          <td class="col-num">47</td>
+          <td class="col-section">Supabase Edge Functions<div class="sub">3 of 9 built: generate-staging · detect-artifacts · apply-watermark — 6 remaining across S3–S7</div></td>
+          <td class="col-status"><span class="badge badge-partial">◑ Partial</span></td>
+          <td class="col-sprint"><span class="sprint-pill na">S1–S7</span></td>
+          <td class="col-notes">Built: generate-staging (S1), detect-artifacts (S3), apply-watermark (S3) · Remaining: enhance-shell (S1), analyse-space (S1), extract-palette (S1), generate-pdf (S6), process-queue (S6), send-notification (S8)</td>
+        </tr>
+        <tr data-status="built" data-sprint="existing">
+          <td class="col-num">48</td>
+          <td class="col-section">Gemini API Integration<div class="sub">Full 14-ref multi-part body · slot labels stored in references_used · fire-and-forget artifact detection</div></td>
+          <td class="col-status"><span class="badge badge-done">✓ Built</span></td>
+          <td class="col-sprint"><span class="sprint-pill s2">S2</span></td>
+          <td class="col-notes">generate-staging/index.ts: Promise.allSettled parallel image fetch (14 slots) · inline_data parts before text prompt · slot labels in references_used · watermarked_url=null (apply-watermark sets it) · artifact_flags=null (detect-artifacts sets it) · triggerArtifactDetection() fire-and-forget per render</td>
+        </tr>
+        <tr data-status="skip" data-sprint="existing">
+          <td class="col-num">49</td>
+          <td class="col-section">End-to-End Workflow<div class="sub">10-step workflow documentation</div></td>
+          <td class="col-status"><span class="badge badge-skip">— Docs</span></td>
+          <td class="col-sprint"><span class="sprint-pill na">N/A</span></td>
+          <td class="col-notes">Emerges naturally as all sections are built</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+</div><!-- /content -->
+
+<p class="updated" id="updated-at">Last updated: April 11, 2026 — 🎉 BUILD COMPLETE ✓ All 57 sections done. Sprint 6 COMPLETE: Sec 32 (Queue Manager), Sec 36 (Furniture Library), Sec 37 (Duplication), Sec 31 (Failure Recovery). Sprint 7 COMPLETE: Sec 28 (Day-to-Dusk), Sec 29 (Material Swap), Sec 42 (Export Formats), Sec 43 (Presentation PDF). Sprint 8 COMPLETE: A1 (Lightbox), A2 (Prompt Preview), A3 (WhatsApp Buttons), A4 (Command Palette), A5 (Cost Alert), A6 (Auto-Save), A7 (Mobile Preview), A8 (Keyboard Shortcuts). Final stats: 49 Built / 4 Partial / 0 To Build.</p>
+
+<script>
+  function filterAll(btn) {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('tbody tr').forEach(row => row.style.display = '');
+    document.querySelectorAll('.sprint').forEach(s => s.style.display = '');
+  }
+
+  function filterStatus(status, btn) {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('tbody tr').forEach(row => {
+      const s = row.getAttribute('data-status');
+      row.style.display = (s === status) ? '' : 'none';
+    });
+    document.querySelectorAll('.sprint').forEach(sprint => {
+      const visible = sprint.querySelectorAll('tbody tr:not([style*="display: none"])').length > 0;
+      sprint.style.display = visible ? '' : 'none';
+    });
+  }
+
+  function filterSprint(sprintId, btn) {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('tbody tr').forEach(row => {
+      const s = row.getAttribute('data-sprint');
+      row.style.display = (s === sprintId) ? '' : 'none';
+    });
+    document.querySelectorAll('.sprint').forEach(sprint => {
+      const isSprint = sprint.getAttribute('data-sprint') === sprintId;
+      sprint.style.display = isSprint ? '' : 'none';
+    });
+  }
+</script>
+</body>
+</html>

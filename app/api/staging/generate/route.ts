@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
+import { projectPriorityToQueue } from '@/lib/queue';
 
 interface GenerateRequest {
   room_id: string;
@@ -48,6 +49,40 @@ export async function POST(request: NextRequest) {
         { error: 'Missing required fields' },
         { status: 400 }
       );
+    }
+
+    // Sec 32: Check if there is already a 'processing' job for this project.
+    // If so, queue this request instead of firing immediately.
+    const { data: activeJobs } = await supabase
+      .from('generation_queue')
+      .select('id')
+      .eq('project_id', project_id)
+      .eq('status', 'processing')
+      .limit(1)
+
+    if (activeJobs && activeJobs.length > 0) {
+      const { data: project } = await supabase
+        .from('projects').select('priority').eq('id', project_id).single()
+      const priority = projectPriorityToQueue(project?.priority ?? 'Normal')
+
+      const { data: queueItem, error: queueError } = await supabase
+        .from('generation_queue')
+        .insert({
+          room_id, project_id, requested_by: user.id,
+          pass_number, pass_type, prompt,
+          reference_urls: reference_urls ?? [],
+          resolution_tier: resolution_tier ?? '2K',
+          variation_count: variation_count ?? 1,
+          priority, status: 'pending',
+        })
+        .select('id')
+        .single()
+
+      if (queueError) {
+        console.error('[Generate] queue insert error:', queueError)
+      } else {
+        return NextResponse.json({ success: true, queue_id: queueItem.id })
+      }
     }
 
     // Call the Supabase Edge Function

@@ -140,31 +140,37 @@ export function TeamComments({ projectId, roomId }: TeamCommentsProps) {
   }
 
   return (
-    <div className="w-full flex flex-col h-screen max-h-[600px] rounded-lg border border-stone-200 bg-white overflow-hidden">
+    /* max-h to prevent this from dominating the page; no h-screen */
+    <div className="w-full flex flex-col max-h-[420px] bg-stone-50/50">
       {/* Comments list */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-stone-50">
+      <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
         {comments.length === 0 ? (
-          <p className="text-sm text-stone-500 text-center py-8">No comments yet. Start a discussion!</p>
+          <div className="py-8 text-center">
+            <div className="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center mx-auto mb-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-stone-400">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+            </div>
+            <p className="text-xs text-stone-400">No comments yet</p>
+          </div>
         ) : (
           comments.map((comment) => (
-            <div key={comment.id} className="bg-white rounded-lg p-3 border border-stone-100">
-              <div className="flex items-start gap-3">
-                <div
-                  className={`${getAvatarColor(comment.user_id)} text-white w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-semibold`}
-                >
-                  {getInitials(comment.profile?.full_name)}
+            <div key={comment.id} className="flex items-start gap-2.5">
+              <div
+                className={`${getAvatarColor(comment.user_id)} text-white w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-[10px] font-bold`}
+              >
+                {getInitials(comment.profile?.full_name)}
+              </div>
+              <div className="flex-1 min-w-0 bg-white rounded-xl rounded-tl-sm border border-stone-100 px-3 py-2.5">
+                <div className="flex items-baseline justify-between gap-2 mb-1">
+                  <p className="text-xs font-semibold text-stone-800">
+                    {comment.profile?.full_name || 'Team Member'}
+                  </p>
+                  <span className="text-[10px] text-stone-400 flex-shrink-0 tabular-nums">
+                    {format(new Date(comment.created_at), 'dd MMM, h:mm a')}
+                  </span>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-baseline justify-between gap-2 mb-1">
-                    <p className="text-sm font-medium text-stone-900">
-                      {comment.profile?.full_name || 'Unknown User'}
-                    </p>
-                    <span className="text-xs text-stone-500 flex-shrink-0">
-                      {format(new Date(comment.created_at), 'dd MMM, h:mm a')}
-                    </span>
-                  </div>
-                  <p className="text-sm text-stone-700 break-words">{comment.content}</p>
-                </div>
+                <p className="text-xs text-stone-700 break-words leading-relaxed">{comment.content}</p>
               </div>
             </div>
           ))
@@ -173,23 +179,28 @@ export function TeamComments({ projectId, roomId }: TeamCommentsProps) {
       </div>
 
       {/* Input form */}
-      <form onSubmit={handleSubmit} className="border-t border-stone-200 bg-white p-4 flex-shrink-0">
-        <div className="flex gap-3">
+      <form onSubmit={handleSubmit} className="border-t border-stone-200 bg-white p-3 flex-shrink-0">
+        <div className="flex gap-2">
           <input
             type="text"
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
-            placeholder="Add a team comment..."
+            placeholder="Add a note…"
             maxLength={500}
-            className="flex-1 px-3 py-2 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-1 px-3 py-2.5 min-h-[44px] border border-stone-200 rounded-lg text-xs bg-white text-stone-800 placeholder:text-stone-300 focus:outline-none focus:ring-2 focus:ring-stone-200 focus:border-stone-400 transition-colors"
             disabled={isSubmitting}
           />
           <button
             type="submit"
             disabled={!newComment.trim() || isSubmitting}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-stone-300 text-white text-sm font-medium rounded-lg transition-colors"
+            className="px-4 py-2 min-h-[44px] bg-stone-900 hover:bg-stone-700 disabled:bg-stone-200 disabled:text-stone-400 text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer"
           >
-            {isSubmitting ? '...' : 'Send'}
+            {isSubmitting ? (
+              <svg className="animate-spin w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+              </svg>
+            ) : 'Send'}
           </button>
         </div>
       </form>

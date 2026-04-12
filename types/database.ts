@@ -38,6 +38,7 @@ export type RenderStatus =
   | 'generated'
   | 'team_approved'
   | 'client_approved'
+  | 'approved'        // alias used interchangeably with team_approved in some flows
   | 'rejected'
   | 'not_selected'
 export type PassType =
@@ -93,6 +94,8 @@ export interface Project {
   revision_limit: number
   total_api_cost: number
   project_style_anchor: Record<string, unknown> | null
+  /** Sec 21: project-level style seed URL — propagated from the first room to lock a style seed */
+  style_seed_url: string | null
   // Joined relations (present when fetched with select)
   rooms?: Room[]
   assigned_profile?: Profile | null
@@ -108,18 +111,29 @@ export interface Room {
   dimensions_h: number | null
   status: RoomStatus
   current_pass: number
+  design_style: string | null
   style_seed_id: string | null
   spatial_analysis: Record<string, unknown> | null
   colour_palette: Record<string, unknown> | null
   enhanced_shell_url: string | null
   original_shell_url: string | null
+  photorealistic_shell_url: string | null
   created_at: string
+  /** Sec 26: URL of the approved style seed render — set when a style seed is approved */
+  style_seed_url: string | null
+  /** Sec 26: true after CP2 approval — freezes style direction for all subsequent passes */
+  style_locked: boolean
+  /** Sec 26: ISO timestamp of when style was locked */
+  style_locked_at: string | null
+  /** Sec 21: true when this room inherited its style seed from another room in the project */
+  style_inherited: boolean
 }
 
 export interface ArtifactFlag {
   issue: string
   location: string
   severity: 'Critical' | 'Major' | 'Minor'
+  description?: string
 }
 
 export interface Render {
@@ -135,12 +149,18 @@ export interface Render {
   thumbnail_url: string | null
   status: RenderStatus
   prompt_used: string | null
+  /** Alias for prompt_used — some queries return this field name */
+  prompt: string | null
   references_used: string[] | null
+  /** Structured reference slot labels stored alongside URLs */
+  references_slots: Array<{ slot: number; label: string }> | null
   artifact_flags: ArtifactFlag[] | null
   api_cost: number
   created_at: string
   approved_at: string | null
   approved_by: string | null
+  /** Sec 29/28: optional metadata stored by surface_swap / day_to_dusk passes */
+  metadata: Record<string, unknown> | null
 }
 
 export interface Checkpoint {
@@ -290,10 +310,35 @@ export interface Notification {
   id: string
   user_id: string
   project_id: string | null
+  room_id: string | null
   message: string
+  /** Short heading for the notification — e.g. "SLA Breach", "Checkpoint Approved" */
+  title: string | null
+  notification_type: string | null
+  /** Deep link navigated to on click — e.g. /projects/:id */
+  link_url: string | null
   is_read: boolean
   created_at: string
 }
+
+/** Sprint 8 — A6: Auto-saved Block 2 prompt draft per room+pass */
+export interface RoomPromptDraft {
+  room_id: string
+  pass_number: number
+  prompt_text: string
+  user_id: string | null
+  updated_at: string
+}
+
+/** Sprint 6 — Sec 36: Furniture reference items for Gemini slots 9–14 */
+export type FurnitureCategory =
+  | 'Seating'
+  | 'Tables'
+  | 'Storage'
+  | 'Beds'
+  | 'Lighting'
+  | 'Decor'
+  | 'Rugs'
 
 // ─── Utility / Computed types ────────────────────────────────
 
@@ -302,6 +347,8 @@ export interface ProjectWithRoomCount extends Project {
   room_count: number
   rooms: Room[]
   assigned_profile: Profile | null
+  /** Sec 41: max revision_number seen across this project's rooms (0 if none) */
+  revision_count: number
 }
 
 // ─── Constants ───────────────────────────────────────────────

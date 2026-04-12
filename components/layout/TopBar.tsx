@@ -1,11 +1,12 @@
 import { createClient } from '@/lib/supabase/server'
 import { SignOutButton } from './SignOutButton'
+import { NotificationBell } from './NotificationBell'
+import { QueueIndicator } from '@/components/staging/QueueIndicator'
+import { CommandPalette } from './CommandPalette'
 
 export async function TopBar() {
-  const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
 
   const { data: profile } = user
     ? await supabase
@@ -22,29 +23,102 @@ export async function TopBar() {
     .slice(0, 2)
     .toUpperCase() ?? '??'
 
+  const roleLabel: Record<string, string> = {
+    admin:  'Admin',
+    senior: 'Senior Designer',
+    junior: 'Junior Designer',
+    viewer: 'Viewer',
+  }
+
   return (
-    <header className="h-14 bg-white border-b border-stone-200 flex items-center justify-between px-6 flex-shrink-0">
-      {/* Left: notification placeholder */}
+    <header
+      className="flex-shrink-0 flex items-center justify-between px-5"
+      style={{
+        height: 52,
+        background: 'var(--surface)',
+        borderBottom: '1px solid var(--border)',
+        boxShadow: 'var(--shadow-xs)',
+      }}
+    >
+      {/* ── Left: breadcrumb slot (page fills this via a portal or static label) */}
       <div className="flex items-center gap-2">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-stone-400">
-          <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
-          <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
-        </svg>
-        <span className="text-xs text-stone-400">Notifications</span>
+        {/* Brand micro mark for when sidebar is context */}
+        <div className="flex items-center gap-2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--brand)' }}>
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            <polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
+          <span
+            className="text-sm font-semibold tracking-tight"
+            style={{ color: 'var(--text-secondary)' }}
+          >
+            Houspire Staging
+          </span>
+        </div>
+        {/* Divider */}
+        <span
+          className="w-px h-4"
+          style={{ background: 'var(--border)' }}
+        />
+        {/* Phase tag */}
+        <span
+          className="text-xs font-medium px-2 py-0.5 rounded-full"
+          style={{ background: 'var(--brand-light)', color: 'var(--brand-dark)' }}
+        >
+          Module 1
+        </span>
       </div>
 
-      {/* Right: user info */}
-      <div className="flex items-center gap-3">
-        <div className="text-right">
-          <p className="text-sm font-medium text-stone-700">
-            {profile?.full_name ?? 'Team Member'}
-          </p>
-          <p className="text-xs text-stone-400 capitalize">{profile?.role ?? 'junior'}</p>
+      {/* ── Right: tools + user ─────────────────────────────── */}
+      <div className="flex items-center gap-1">
+
+        {/* Search */}
+        <CommandPalette />
+
+        {/* Divider */}
+        <span className="w-px h-4 mx-1" style={{ background: 'var(--border)' }} />
+
+        {/* Queue indicator */}
+        <QueueIndicator />
+
+        {/* Notifications */}
+        <NotificationBell />
+
+        {/* Divider */}
+        <span className="w-px h-5 mx-2" style={{ background: 'var(--border)' }} />
+
+        {/* User identity */}
+        <div className="flex items-center gap-2.5">
+          <div className="text-right hidden sm:block">
+            <p
+              className="text-xs font-semibold leading-tight"
+              style={{ color: 'var(--text-primary)' }}
+            >
+              {profile?.full_name ?? 'Team Member'}
+            </p>
+            <p
+              className="text-[10px] leading-tight mt-0.5"
+              style={{ color: 'var(--text-muted)' }}
+            >
+              {roleLabel[profile?.role ?? 'junior'] ?? profile?.role}
+            </p>
+          </div>
+
+          {/* Avatar */}
+          <div
+            className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold select-none flex-shrink-0"
+            style={{
+              background: 'linear-gradient(135deg, var(--brand) 0%, var(--brand-mid) 100%)',
+              color: 'white',
+              boxShadow: '0 0 0 2px var(--border)',
+            }}
+          >
+            {initials}
+          </div>
+
+          {/* Sign out */}
+          <SignOutButton />
         </div>
-        <div className="w-8 h-8 rounded-full bg-stone-700 text-white text-xs flex items-center justify-center font-semibold">
-          {initials}
-        </div>
-        <SignOutButton />
       </div>
     </header>
   )

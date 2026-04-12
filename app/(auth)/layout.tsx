@@ -1,7 +1,8 @@
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-stone-50 flex items-center justify-center">
-      <div className="w-full max-w-md px-4">{children}</div>
+    /* h-dvh respects iOS viewport, bg-stone-100 gives subtle depth behind the card */
+    <div className="h-dvh bg-stone-100 flex items-center justify-center px-4 py-8">
+      <div className="w-full max-w-sm">{children}</div>
     </div>
   )
 }

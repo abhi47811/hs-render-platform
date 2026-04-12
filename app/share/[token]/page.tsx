@@ -41,7 +41,7 @@ export default async function SharePage({ params }: SharePageProps) {
         .from('share_links')
         .update({ opened_at: new Date().toISOString() })
         .eq('id', shareLink.id)
-        .catch(() => {
+        .then(() => {
           // Silently fail — we don't want to block the page if tracking fails
         })
     }
