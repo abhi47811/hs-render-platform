@@ -17,7 +17,7 @@ export default async function StagingPage({ params }: StagingPageProps) {
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) redirect('/auth/login');
 
-  // Fetch room with full project details (all fields for prompt assembly + Sprint 4)
+  // Fetch room with full project details
   const { data: room, error: roomError } = await supabase
     .from('rooms')
     .select(`
@@ -35,7 +35,7 @@ export default async function StagingPage({ params }: StagingPageProps) {
         material_preferences,
         exclusions,
         status,
-        style_seed_url
+        project_style_anchor
       )
     `)
     .eq('id', params.roomId)
@@ -44,9 +44,8 @@ export default async function StagingPage({ params }: StagingPageProps) {
 
   if (roomError || !room) redirect(`/projects/${params.id}/rooms/${params.roomId}`);
 
-  // Guard: must have shell approved before staging
-  const cp1Approved = room.status !== 'not_started' && room.status !== 'intake';
-  if (!cp1Approved) redirect(`/projects/${params.id}/rooms/${params.roomId}`);
+  // Guard: must have a shell uploaded before staging
+  if (!room.original_shell_url) redirect(`/projects/${params.id}/rooms/${params.roomId}`);
 
   // Fetch renders
   const { data: renders } = await supabase
@@ -61,19 +60,20 @@ export default async function StagingPage({ params }: StagingPageProps) {
     .select('id, checkpoint_number, status, client_notes, team_notes, shared_at, approved_at')
     .eq('room_id', params.roomId);
 
-  // Sprint 4 — Sec 21: find which room in this project owns the project-level style seed
+  // Sprint 4 — find which room in this project owns the project-level style anchor
   const project = room.projects as any;
+  const projectStyleAnchor = project?.project_style_anchor ?? null;
   let projectStyleSeedRoom: string | null = null;
-  if (project?.style_seed_url) {
+  if (projectStyleAnchor) {
     const { data: anchorRoom } = await supabase
       .from('rooms')
       .select('id, room_name')
       .eq('project_id', params.id)
-      .eq('style_seed_url', project.style_seed_url)
+      .eq('style_seed_id', projectStyleAnchor)
       .neq('id', params.roomId)
       .limit(1)
-      .single();
-    projectStyleSeedRoom = anchorRoom?.room_name ?? 'another room';
+      .maybeSingle();
+    projectStyleSeedRoom = anchorRoom?.room_name ?? null;
   }
 
   const renderList: Render[] = renders || [];
@@ -85,7 +85,7 @@ export default async function StagingPage({ params }: StagingPageProps) {
       project={project}
       renders={renderList}
       checkpoints={cpList}
-      projectStyleSeedUrl={project?.style_seed_url ?? null}
+      projectStyleSeedUrl={projectStyleAnchor}
       projectStyleSeedRoom={projectStyleSeedRoom}
     />
   );
