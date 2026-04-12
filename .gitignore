@@ -33,6 +33,10 @@ yarn-error.log*
 # vercel
 .vercel
 
+# scripts with credentials — NEVER commit
+setup-vercel-env.sh
+*.sh
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

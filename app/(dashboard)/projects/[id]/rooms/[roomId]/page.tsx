@@ -195,6 +195,7 @@ export default async function RoomPage({ params }: RoomPageProps) {
                   <ShellUpload
                     roomId={params.roomId}
                     projectId={params.id}
+                    roomType={room.room_type ?? null}
                   />
                 ) : !room.photorealistic_shell_url ? (
                   /* Step 2: Shell uploaded, run photorealistic enhancement (Section 9) */
