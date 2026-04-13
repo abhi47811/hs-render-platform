@@ -4,7 +4,9 @@ const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
-const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
+const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!, {
+  auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+});
 
 interface ExtractPaletteRequest {
   room_id: string;
@@ -81,10 +83,13 @@ async function fetchImageAsBase64(url: string): Promise<{ data: string; mimeType
   const mimeType = contentType.includes("png") ? "image/png"
     : contentType.includes("webp") ? "image/webp"
     : "image/jpeg";
-  return {
-    data: btoa(String.fromCharCode(...new Uint8Array(buffer))),
-    mimeType,
-  };
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  const chunkSize = 8192;
+  for (let i = 0; i < bytes.byteLength; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  }
+  return { data: btoa(binary), mimeType };
 }
 
 Deno.serve(async (req: Request) => {

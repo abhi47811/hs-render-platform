@@ -161,7 +161,9 @@ Deno.serve(async (req: Request) => {
     const overallQuality = parsed.overall_quality ?? 'pass'
 
     // ── Persist to Supabase ───────────────────────────────────────────────
-    const supabase = createClient(supabaseUrl, serviceKey)
+    const supabase = createClient(supabaseUrl, serviceKey, {
+      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+    })
 
     const { data: renderRow } = await supabase
       .from('renders')

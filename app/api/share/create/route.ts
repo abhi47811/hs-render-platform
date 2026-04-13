@@ -2,10 +2,56 @@ import { createClient } from '@/lib/supabase/server'
 import { createShareLink } from '@/lib/share'
 import { NextRequest, NextResponse } from 'next/server'
 
+const SUPABASE_FUNCTIONS_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+/**
+ * Fire-and-forget: watermark all renders for a room that don't yet have a watermarked_url.
+ * Called just before issuing a share link so clients always see watermarked images.
+ */
+async function watermarkRendersForRoom(roomId: string) {
+  if (!SUPABASE_FUNCTIONS_URL || !SUPABASE_SERVICE_KEY) return
+
+  try {
+    // Import the service-role client to query renders
+    const { createClient: createServiceClient } = await import('@supabase/supabase-js')
+    const serviceSupabase = createServiceClient(SUPABASE_FUNCTIONS_URL, SUPABASE_SERVICE_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+    })
+
+    // Find renders that have a storage_url but no watermarked_url yet
+    const { data: renders } = await serviceSupabase
+      .from('renders')
+      .select('id, storage_url')
+      .eq('room_id', roomId)
+      .not('storage_url', 'is', null)
+      .is('watermarked_url', null)
+
+    if (!renders?.length) return
+
+    // Fire apply-watermark for each render (non-blocking)
+    for (const render of renders) {
+      fetch(`${SUPABASE_FUNCTIONS_URL}/functions/v1/apply-watermark`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+        },
+        body: JSON.stringify({ render_id: render.id, render_url: render.storage_url }),
+      }).catch((err) =>
+        console.warn(`[share/create] watermark failed for render ${render.id}:`, err)
+      )
+    }
+  } catch (err) {
+    console.warn('[share/create] watermarkRendersForRoom error:', err)
+  }
+}
+
 /**
  * POST /api/share/create
- * Creates a share link for a checkpoint and updates checkpoint status to 'shared'
- * Requires authentication
+ * Creates a share link for a checkpoint and updates checkpoint status to 'shared'.
+ * Auto-triggers watermarking of all unwatermarked renders before the link is issued.
+ * Requires authentication.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -31,6 +77,9 @@ export async function POST(request: NextRequest) {
     if (![1, 2, 3].includes(checkpoint_number)) {
       return NextResponse.json({ error: 'Invalid checkpoint number' }, { status: 400 })
     }
+
+    // Kick off watermarking for all un-watermarked renders (fire-and-forget)
+    watermarkRendersForRoom(room_id)
 
     // Create the share link
     const token = await createShareLink({
