@@ -129,6 +129,7 @@ export function StagingPageClient({
 
   // ── Pass + generation state ─────────────────────────────────────────────
   const [selectedPass, setSelectedPass] = useState(room.current_pass ?? 1);
+  const [localCurrentPass, setLocalCurrentPass] = useState(room.current_pass ?? 0);
   const [prompt, setPrompt] = useState('');
   const [resolutionTier, setResolutionTier] = useState<'1K' | '2K' | '4K'>('2K');
   const [variationCount, setVariationCount] = useState<1 | 2 | 3>(1);
@@ -285,6 +286,11 @@ export function StagingPageClient({
       });
       if (!res.ok) throw new Error(await res.text());
       setRenders(prev => prev.map(r => r.id === renderId ? { ...r, status: 'team_approved' } : r));
+      // Auto-advance to next pass after approval
+      const approvedRender = renders.find(r => r.id === renderId);
+      if (approvedRender && approvedRender.pass_number === selectedPass && selectedPass < 6) {
+        setSelectedPass(selectedPass + 1);
+      }
     } catch (err) {
       console.error('Approval error:', err);
     }
@@ -312,7 +318,13 @@ export function StagingPageClient({
         .select('*')
         .eq('room_id', room.id)
         .order('created_at', { ascending: false });
-      if (!error && data) setRenders(data);
+      if (!error && data) {
+        setRenders(data);
+        if (data.length > 0) {
+          const maxGenerated = Math.max(...data.map((r: { pass_number: number }) => r.pass_number));
+          setLocalCurrentPass(prev => Math.max(prev, maxGenerated));
+        }
+      }
     } catch (err) {
       console.error('Refresh error:', err);
     } finally {
@@ -488,7 +500,7 @@ export function StagingPageClient({
 
           {/* Pass Selector */}
           <PassSelector
-            currentPass={room.current_pass}
+            currentPass={localCurrentPass}
             selectedPass={selectedPass}
             onSelectPass={setSelectedPass}
           />
