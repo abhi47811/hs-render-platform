@@ -2,24 +2,9 @@
 'use client'
 
 import { useState, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-
-interface FloorPlanData {
-  dimensions?: {
-    length_ft: number | null
-    width_ft: number | null
-    area_sqft: number | null
-    ceiling_height_ft: number | null
-  }
-  entry_wall?: string
-  tv_wall?: string
-  doors?: Array<{ location: string; approximate_position: string; notes: string }>
-  windows?: Array<{ location: string; approximate_position: string; light_direction: string; notes: string }>
-  fixed_elements?: string[]
-  forbidden_zones?: Array<{ reason: string; location: string; approximate_pct: string }>
-  furniture_zones?: Array<{ zone_name: string; location: string; approximate_pct: string; notes: string }>
-  analyst_notes?: string
-}
+import type { FloorPlanData } from '@/lib/prompt/assembler'
 
 interface FloorPlanUploadProps {
   roomId: string
@@ -37,6 +22,7 @@ export function FloorPlanUpload({
   onParsed,
 }: FloorPlanUploadProps) {
   const supabase = createClient()
+  const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [uploadedUrl, setUploadedUrl] = useState<string | null>(existingUrl ?? null)
@@ -48,6 +34,11 @@ export function FloorPlanUpload({
   async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
+
+    if (file.size > 5 * 1024 * 1024) {
+      setError('Floor plan image must be under 5MB. Try a lower-resolution export from your builder app.')
+      return
+    }
 
     const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic']
     if (!validTypes.includes(file.type)) {
@@ -99,6 +90,7 @@ export function FloorPlanUpload({
 
       setParsedData(data.floor_plan_data)
       onParsed?.(data.floor_plan_data)
+      router.refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Parse failed')
     } finally {
