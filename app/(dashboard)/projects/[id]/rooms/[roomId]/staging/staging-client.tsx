@@ -376,7 +376,7 @@ export function StagingPageClient({
   // ─────────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 px-4 py-3">
 
       {/* Sprint 4 — Sec 05: Room Progress Timeline */}
       <RoomProgressTimeline
@@ -410,16 +410,16 @@ export function StagingPageClient({
       )}
 
       {/* Main 2-column layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
 
-        {/* ── Left Panel — Controls ── */}
-        <div className="lg:col-span-1 space-y-5">
+        {/* ── Left Panel — Controls (sticky, scrollable) ── */}
+        <div className="lg:col-span-1 space-y-3 lg:sticky lg:top-0 lg:max-h-[calc(100vh-120px)] lg:overflow-y-auto lg:pr-1" style={{ scrollbarWidth: 'thin' }}>
 
           {/* Header */}
-          <div className="flex items-start justify-between gap-2">
+          <div className="flex items-center justify-between gap-2">
             <div>
-              <h1 className="text-xl font-bold text-stone-900">{room.room_name}</h1>
-              <p className="text-xs text-stone-500 mt-0.5">
+              <h1 className="text-base font-bold text-stone-900 leading-tight">{room.room_name}</h1>
+              <p className="text-[11px] text-stone-500">
                 {room.room_type} · {project.primary_style} · {project.city}
               </p>
             </div>
@@ -500,8 +500,10 @@ export function StagingPageClient({
             />
           )}
 
-          {/* Sprint 9 — A7: Style Seed Evolution Timeline */}
-          <StyleSeedEvolution renders={renders} />
+          {/* Sprint 9 — A7: Style Seed Evolution Timeline — only shown when there are multiple seeds */}
+          {renders.filter(r => r.pass_number === 1).length > 1 && (
+            <StyleSeedEvolution renders={renders} />
+          )}
 
           {/* Prompt Builder — 9-block architecture */}
           <PromptBuilder
@@ -527,70 +529,56 @@ export function StagingPageClient({
             onPromptChange={setPrompt}
           />
 
-          {/* Generation Settings */}
-          <div className="space-y-4 p-4 bg-stone-50 rounded-xl border border-stone-200">
-            <h3 className="text-xs font-semibold text-stone-500 uppercase tracking-wider">
-              Generation Settings
-            </h3>
-
-            {/* Resolution Tier */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-medium text-stone-700">Resolution</label>
-                <span className="text-[10px] text-stone-400">Auto-set · override OK</span>
-              </div>
-              <div className="relative">
-                <select
-                  value={resolutionTier}
-                  onChange={(e) => setResolutionTier(e.target.value as '1K' | '2K' | '4K')}
-                  className="w-full appearance-none px-3 py-2 pr-8 rounded-lg border border-stone-300 bg-white text-stone-700 text-sm focus:outline-none focus:ring-2 focus:ring-stone-900 focus:border-transparent cursor-pointer"
-                >
-                  <option value="1K">1K — ₹2.50 / image</option>
-                  <option value="2K">2K — ₹6.00 / image</option>
-                  <option value="4K">4K — ₹15.00 / image</option>
-                </select>
-                <svg className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
-              </div>
+          {/* Generation Settings — compact inline row */}
+          <div className="flex items-center gap-2 p-2.5 bg-stone-50 rounded-xl border border-stone-200">
+            {/* Resolution */}
+            <div className="relative flex-1">
+              <select
+                value={resolutionTier}
+                onChange={(e) => setResolutionTier(e.target.value as '1K' | '2K' | '4K')}
+                className="w-full appearance-none pl-2.5 pr-6 py-1.5 rounded-lg border border-stone-200 bg-white text-stone-700 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-stone-900 cursor-pointer"
+              >
+                <option value="1K">1K · ₹2.50</option>
+                <option value="2K">2K · ₹6.00</option>
+                <option value="4K">4K · ₹15.00</option>
+              </select>
+              <svg className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-stone-400" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 9l6 6 6-6" />
+              </svg>
             </div>
-
-            {/* Variation Count */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-stone-700">Variations</label>
-              <div className="flex gap-2">
-                {[1, 2, 3].map((count) => (
-                  <button
-                    key={count}
-                    onClick={() => setVariationCount(count as 1 | 2 | 3)}
-                    className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors min-h-[40px] ${
-                      variationCount === count
-                        ? 'bg-stone-900 text-white'
-                        : 'bg-white border border-stone-300 text-stone-700 hover:bg-stone-50'
-                    }`}
-                  >
-                    {count}
-                  </button>
-                ))}
-              </div>
+            {/* Divider */}
+            <div className="h-5 w-px bg-stone-200 flex-shrink-0" />
+            {/* Variations */}
+            <div className="flex items-center gap-1 flex-shrink-0">
+              <span className="text-[10px] text-stone-400 font-medium mr-0.5">Var</span>
+              {[1, 2, 3].map((count) => (
+                <button
+                  key={count}
+                  onClick={() => setVariationCount(count as 1 | 2 | 3)}
+                  className={`w-7 h-7 rounded-lg text-xs font-semibold transition-colors ${
+                    variationCount === count
+                      ? 'bg-stone-900 text-white'
+                      : 'bg-white border border-stone-200 text-stone-600 hover:bg-stone-100'
+                  }`}
+                >
+                  {count}
+                </button>
+              ))}
             </div>
           </div>
 
-          {/* Reference Slot Summary */}
+          {/* Reference Slot Summary — compact single row */}
           {referenceAllocation.slots.length > 0 && (
-            <div className="p-3 bg-stone-50 rounded-xl border border-stone-200 space-y-2">
-              <div className="flex items-center gap-1.5 text-[10px] font-semibold text-stone-400 uppercase tracking-wider">
-                <SlotIcon />
-                Reference Images ({referenceAllocation.slots.length} / 14)
-              </div>
-              <div className="grid grid-cols-2 gap-1">
+            <div className="flex items-center gap-2 px-2.5 py-1.5 bg-stone-50 rounded-lg border border-stone-200">
+              <SlotIcon />
+              <span className="text-[10px] text-stone-400 font-medium flex-shrink-0">
+                Refs {referenceAllocation.slots.length}/14
+              </span>
+              <div className="flex items-center gap-1 flex-wrap">
                 {referenceAllocation.slots.map(slot => (
-                  <div key={slot.slot} className="flex items-center gap-1.5">
-                    <div className="w-1.5 h-1.5 rounded-full bg-stone-400 flex-shrink-0" />
-                    <span className="text-[10px] text-stone-500 truncate">
-                      <span className="font-medium">S{slot.slot}:</span> {slot.label}
-                    </span>
-                  </div>
+                  <span key={slot.slot} className="text-[10px] text-stone-500 bg-white border border-stone-200 rounded px-1.5 py-0.5">
+                    S{slot.slot}: {slot.label}
+                  </span>
                 ))}
               </div>
             </div>
@@ -641,36 +629,32 @@ export function StagingPageClient({
             existingRenders={renders.map(r => ({ pass_number: r.pass_number, status: r.status }))}
           />
 
-          {/* Info hint */}
-          <div className="p-3 bg-amber-50 rounded-lg border border-amber-200 flex gap-2">
-            <InfoIcon />
-            <p className="text-xs text-amber-700">
-              Each pass builds on the previous one. Approve renders before moving to the next stage.
-            </p>
-          </div>
         </div>
 
         {/* ── Right Panel — Render Gallery ── */}
         <div className="lg:col-span-2">
-          <div className="mb-4 flex items-center justify-between">
-            <div>
+          <div className="mb-2 flex items-center justify-between">
+            <div className="flex items-center gap-2">
               <h2 className="text-sm font-semibold text-stone-800">Generated Renders</h2>
-              <p className="text-xs text-stone-500 mt-0.5">
+              <span className="text-[10px] text-stone-400">
                 Pass {selectedPass} · {getPassType(selectedPass).replace(/_/g, ' ')}
-                {styleLocked && (
-                  <span className="ml-2 text-emerald-600 font-medium">🔒 Style locked</span>
-                )}
-              </p>
+              </span>
+              {styleLocked && (
+                <span className="text-[10px] text-emerald-600 font-semibold bg-emerald-50 px-1.5 py-0.5 rounded-full border border-emerald-200">
+                  🔒 Style locked
+                </span>
+              )}
             </div>
-            {isRefreshing && (
-              <svg className="animate-spin text-stone-400" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 12a9 9 0 11-6.219-8.56" />
-              </svg>
-            )}
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-stone-400">Double-click to fullscreen</span>
+              {isRefreshing && (
+                <svg className="animate-spin text-stone-400" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 12a9 9 0 11-6.219-8.56" />
+                </svg>
+              )}
+            </div>
           </div>
 
-          {/* Sprint 8 — A1: Double-click hint + gallery with lightbox trigger */}
-          <p className="text-[10px] text-stone-400 mb-2 text-right">Double-click any render to open full-screen</p>
           <RenderGallery
             renders={renders}
             onApprove={handleApprove}
