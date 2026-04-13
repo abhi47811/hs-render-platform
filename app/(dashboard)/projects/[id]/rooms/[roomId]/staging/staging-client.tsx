@@ -167,6 +167,9 @@ export function StagingPageClient({
   // ── Sprint 8 — A2: Prompt Preview Modal ───────────────────────────────
   const [showPromptPreview, setShowPromptPreview] = useState(false);
 
+  // ── UX: Room context panel collapsed by default ────────────────────────
+  const [showRoomContext, setShowRoomContext] = useState(false);
+
   // ── Sprint 8 — A6: Auto-save prompt drafts ────────────────────────────
   const { saveState, loadedDraft, isLoadingDraft } = useAutoSavePrompt(
     room.id,
@@ -428,23 +431,55 @@ export function StagingPageClient({
             />
           </div>
 
-          {/* S09: Shell Enhancement Pass */}
-          <ShellEnhancement
-            roomId={room.id}
-            projectId={room.project_id}
-            shellUrl={(room as any).original_shell_url ?? null}
-            enhancedShellUrl={enhancedShellUrl}
-            onEnhanced={(url) => setEnhancedShellUrl(url)}
-          />
-
-          {/* S10: Spatial Analysis — prefers enhanced shell if available */}
-          <SpatialAnalysis
-            roomId={room.id}
-            projectId={room.project_id}
-            shellUrl={enhancedShellUrl ?? (room as any).original_shell_url ?? null}
-            spatialAnalysis={spatialAnalysisData}
-            onAnalysed={(data) => setSpatialAnalysisData(data)}
-          />
+          {/* ── Room Context (collapsible) ── */}
+          <div className="rounded-xl border border-stone-200 overflow-hidden">
+            <button
+              onClick={() => setShowRoomContext(v => !v)}
+              className="w-full flex items-center justify-between px-4 py-2.5 bg-stone-50 hover:bg-stone-100 transition-colors text-left"
+            >
+              <div className="flex items-center gap-2.5">
+                {(room as any).original_shell_url && (
+                  <img
+                    src={enhancedShellUrl ?? (room as any).original_shell_url}
+                    alt="Shell"
+                    className="w-8 h-8 rounded object-cover border border-stone-200"
+                  />
+                )}
+                <div>
+                  <p className="text-xs font-semibold text-stone-700">Room Context</p>
+                  <p className="text-[10px] text-stone-400">
+                    {enhancedShellUrl ? '✓ Enhanced' : 'Shell'} · {spatialAnalysisData ? `${(spatialAnalysisData as any)?.furniture_zones?.length ?? 0} zones · ${(spatialAnalysisData as any)?.forbidden_zones?.length ?? 0} blocked` : 'Not analysed'}
+                  </p>
+                </div>
+              </div>
+              <svg
+                width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                className={`text-stone-400 transition-transform ${showRoomContext ? 'rotate-180' : ''}`}
+              >
+                <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+            {showRoomContext && (
+              <div className="p-4 space-y-4 border-t border-stone-200">
+                {/* S09: Shell Enhancement Pass */}
+                <ShellEnhancement
+                  roomId={room.id}
+                  projectId={room.project_id}
+                  shellUrl={(room as any).original_shell_url ?? null}
+                  enhancedShellUrl={enhancedShellUrl}
+                  onEnhanced={(url) => setEnhancedShellUrl(url)}
+                />
+                {/* S10: Spatial Analysis — prefers enhanced shell if available */}
+                <SpatialAnalysis
+                  roomId={room.id}
+                  projectId={room.project_id}
+                  shellUrl={enhancedShellUrl ?? (room as any).original_shell_url ?? null}
+                  spatialAnalysis={spatialAnalysisData}
+                  onAnalysed={(data) => setSpatialAnalysisData(data)}
+                />
+              </div>
+            )}
+          </div>
 
           {/* Pass Selector */}
           <PassSelector
