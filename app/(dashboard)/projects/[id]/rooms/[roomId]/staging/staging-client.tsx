@@ -146,6 +146,11 @@ export function StagingPageClient({
     room.spatial_analysis ?? null
   )
 
+  // ── Task 6: Floor Plan Data state ────────────────────────────────────────
+  const [floorPlanData, setFloorPlanData] = useState<Record<string, unknown> | null>(
+    (room as any).floor_plan_data ?? null
+  )
+
   // ── Sprint 5: Project status (tracks revisions) ─────────────────────────
   const [projectStatus, setProjectStatus] = useState<string>(project.status ?? 'staging');
 
@@ -521,6 +526,7 @@ export function StagingPageClient({
             passType={getPassType(selectedPass)}
             passNumber={selectedPass}
             spatialAnalysis={spatialAnalysisData}
+            floorPlanData={floorPlanData}
             colourPalette={room.colour_palette ?? null}
             moodboardCount={referenceAllocation.moodboard_count}
             furnitureRefCount={referenceAllocation.furniture_ref_count}
