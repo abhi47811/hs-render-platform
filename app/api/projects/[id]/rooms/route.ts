@@ -103,6 +103,55 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       console.error('[Add Room] checkpoint insert error:', cpError)
     }
 
+    // ── S22: Checkpoint inheritance ───────────────────────────────────────────
+    // When adding room N (N > 1), look at existing rooms in the project.
+    // For each checkpoint number, if ALL existing rooms have it approved,
+    // inherit that approved status for the new room.
+    // This preserves the workflow state when rooms are added mid-project.
+    try {
+      const { data: existingRooms } = await supabase
+        .from('rooms')
+        .select('id')
+        .eq('project_id', projectId)
+        .neq('id', roomId)
+
+      if (existingRooms && existingRooms.length > 0) {
+        const existingRoomIds = existingRooms.map((r: { id: string }) => r.id)
+
+        const { data: existingCPs } = await supabase
+          .from('checkpoints')
+          .select('room_id, checkpoint_number, status')
+          .in('room_id', existingRoomIds)
+
+        if (existingCPs && existingCPs.length > 0) {
+          for (const cpNum of [1, 2, 3]) {
+            const cpsForNum = existingCPs.filter(
+              (cp: { checkpoint_number: number }) => cp.checkpoint_number === cpNum
+            )
+            // Only inherit if every existing room has this checkpoint approved
+            const allApproved =
+              existingRoomIds.every((rid: string) =>
+                cpsForNum.some(
+                  (cp: { room_id: string; status: string }) =>
+                    cp.room_id === rid && cp.status === 'approved'
+                )
+              )
+
+            if (allApproved) {
+              await supabase
+                .from('checkpoints')
+                .update({ status: 'approved' })
+                .eq('room_id', roomId)
+                .eq('checkpoint_number', cpNum)
+            }
+          }
+        }
+      }
+    } catch (inheritErr) {
+      // Inheritance is best-effort — don't fail room creation if it errors
+      console.error('[Add Room] checkpoint inheritance error:', inheritErr)
+    }
+
     // ── Activity log ──────────────────────────────────────────────────────────
     supabase.from('activity_log').insert({
       project_id:         projectId,

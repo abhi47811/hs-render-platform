@@ -37,6 +37,10 @@ import { useAutoSavePrompt } from '@/lib/useAutoSavePrompt'
 import { AutoSaveIndicator } from '@/lib/AutoSaveIndicator'
 // A3: CheckpointPanel for CP2/CP3 — WhatsApp button + team notes + quality checklist
 import { CheckpointPanel } from '@/components/shell/CheckpointPanel'
+// S09: Shell Enhancement Pass
+import { ShellEnhancement } from '@/components/staging/ShellEnhancement'
+// S10: Spatial Analysis
+import { SpatialAnalysis } from '@/components/staging/SpatialAnalysis'
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -127,6 +131,16 @@ export function StagingPageClient({
   const [renders, setRenders] = useState<Render[]>(initialRenders);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [costRefreshKey, setCostRefreshKey] = useState(0);
+
+  // ── S09: Shell Enhancement state ───────────────────────────────────────
+  const [enhancedShellUrl, setEnhancedShellUrl] = useState<string | null>(
+    (room as any).enhanced_shell_url ?? null
+  )
+
+  // ── S10: Spatial Analysis state ─────────────────────────────────────────
+  const [spatialAnalysisData, setSpatialAnalysisData] = useState<Record<string, unknown> | null>(
+    room.spatial_analysis ?? null
+  )
 
   // ── Sprint 5: Project status (tracks revisions) ─────────────────────────
   const [projectStatus, setProjectStatus] = useState<string>(project.status ?? 'staging');
@@ -410,6 +424,24 @@ export function StagingPageClient({
             />
           </div>
 
+          {/* S09: Shell Enhancement Pass */}
+          <ShellEnhancement
+            roomId={room.id}
+            projectId={room.project_id}
+            shellUrl={(room as any).original_shell_url ?? null}
+            enhancedShellUrl={enhancedShellUrl}
+            onEnhanced={(url) => setEnhancedShellUrl(url)}
+          />
+
+          {/* S10: Spatial Analysis — prefers enhanced shell if available */}
+          <SpatialAnalysis
+            roomId={room.id}
+            projectId={room.project_id}
+            shellUrl={enhancedShellUrl ?? (room as any).original_shell_url ?? null}
+            spatialAnalysis={spatialAnalysisData}
+            onAnalysed={(data) => setSpatialAnalysisData(data)}
+          />
+
           {/* Pass Selector */}
           <PassSelector
             currentPass={room.current_pass}
@@ -444,7 +476,7 @@ export function StagingPageClient({
             exclusions={project.exclusions ?? null}
             passType={getPassType(selectedPass)}
             passNumber={selectedPass}
-            spatialAnalysis={room.spatial_analysis ?? null}
+            spatialAnalysis={spatialAnalysisData}
             colourPalette={room.colour_palette ?? null}
             moodboardCount={referenceAllocation.moodboard_count}
             furnitureRefCount={referenceAllocation.furniture_ref_count}
