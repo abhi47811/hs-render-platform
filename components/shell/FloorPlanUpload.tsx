@@ -54,6 +54,18 @@ export function FloorPlanUpload({
     setIsUploading(true)
 
     try {
+      // Delete previous floor plan file if replacing
+      if (uploadedUrl) {
+        try {
+          const prevPath = uploadedUrl.split('/storage/v1/object/public/shells/')[1]
+          if (prevPath) {
+            await supabase.storage.from('shells').remove([decodeURIComponent(prevPath)])
+          }
+        } catch {
+          // Silently ignore deletion errors
+        }
+      }
+
       const ext = file.name.split('.').pop() ?? 'jpg'
       const filePath = `floorplans/${projectId}/${roomId}_${Date.now()}.${ext}`
 
