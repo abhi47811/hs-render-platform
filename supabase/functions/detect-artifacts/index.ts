@@ -114,7 +114,7 @@ Deno.serve(async (req: Request) => {
 
     // ── Call Gemini 2.0 Flash (vision-only — cheaper than pro-image) ──────
     const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -184,7 +184,7 @@ Deno.serve(async (req: Request) => {
         call_type: 'vision',
         resolution_tier: null,
         cost_inr: 1.5,
-        gemini_model: 'gemini-2.0-flash',
+        gemini_model: 'gemini-2.5-flash',
       })
 
       await supabase.from('activity_log').insert({

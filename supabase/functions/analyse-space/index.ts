@@ -159,9 +159,9 @@ Deno.serve(async (req: Request) => {
     const { data: imageBase64, mimeType } = await fetchImageAsBase64(shell_url);
 
     // 2. Call Gemini in vision-only mode (text output only — no image generation)
-    // Use gemini-2.0-flash for vision analysis (cheaper, faster)
+    // Use gemini-2.5-flash for vision analysis (cheaper, faster)
     const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -222,7 +222,7 @@ Deno.serve(async (req: Request) => {
       call_type: "vision",
       resolution_tier: null,
       cost_inr: 1.5,
-      gemini_model: "gemini-2.0-flash",
+      gemini_model: "gemini-2.5-flash",
     });
 
     // 6. Activity log
