@@ -93,6 +93,39 @@ const NAV_ITEMS = [
       </svg>
     ),
   },
+  {
+    href: '/costs',
+    label: 'API Costs',
+    icon: (
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="9"/>
+        <path d="M14.5 9.5a3 3 0 1 0 0 5M12 7v1m0 8v1"/>
+      </svg>
+    ),
+  },
+  {
+    href: '/templates/performance',
+    label: 'Template Perf',
+    icon: (
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 3v18h18"/>
+        <rect x="7" y="10" width="3" height="8" rx="1"/>
+        <rect x="12" y="6" width="3" height="12" rx="1"/>
+        <rect x="17" y="13" width="3" height="5" rx="1"/>
+      </svg>
+    ),
+  },
+  {
+    href: '/archive',
+    label: 'Archive',
+    icon: (
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="21 8 21 21 3 21 3 8"/>
+        <rect x="1" y="3" width="22" height="5" rx="1"/>
+        <line x1="10" y1="12" x2="14" y2="12"/>
+      </svg>
+    ),
+  },
 
 ]
 
