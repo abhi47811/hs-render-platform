@@ -63,8 +63,8 @@ function AnalysisSummary({ data, editable, onChange }: {
     <div className="space-y-4">
       {/* Confidence + Quick Stats */}
       <div className="flex flex-wrap gap-2 items-center">
-        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${CONFIDENCE_STYLES[data.analysis_confidence]}`}>
-          {data.analysis_confidence.charAt(0).toUpperCase() + data.analysis_confidence.slice(1)} confidence
+        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${CONFIDENCE_STYLES[data.analysis_confidence] ?? CONFIDENCE_STYLES['medium']}`}>
+          {data.analysis_confidence ? data.analysis_confidence.charAt(0).toUpperCase() + data.analysis_confidence.slice(1) : 'Unknown'} confidence
         </span>
         <span className="text-xs text-stone-500 bg-stone-100 px-2.5 py-1 rounded-full">
           {data.doors?.length ?? 0} door{(data.doors?.length ?? 0) !== 1 ? 's' : ''}

@@ -136,14 +136,14 @@ function PaletteDisplay({ palette, editable, onChange }: {
     <div className="space-y-4">
       {/* Mood summary */}
       <div className="flex flex-wrap gap-2 items-center">
-        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${CONFIDENCE_STYLES[palette.extraction_confidence]}`}>
-          {palette.extraction_confidence.charAt(0).toUpperCase() + palette.extraction_confidence.slice(1)} confidence
+        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${CONFIDENCE_STYLES[palette.extraction_confidence] ?? CONFIDENCE_STYLES['medium']}`}>
+          {palette.extraction_confidence ? palette.extraction_confidence.charAt(0).toUpperCase() + palette.extraction_confidence.slice(1) : 'Unknown'} confidence
         </span>
         <span className="text-xs text-stone-500 bg-stone-100 px-2.5 py-1 rounded-full">
-          {palette.dominant_temperature.charAt(0).toUpperCase() + palette.dominant_temperature.slice(1)} tones
+          {palette.dominant_temperature ? palette.dominant_temperature.charAt(0).toUpperCase() + palette.dominant_temperature.slice(1) : '—'} tones
         </span>
         <span className="text-xs text-stone-500 bg-stone-100 px-2.5 py-1 rounded-full">
-          {palette.saturation_level.charAt(0).toUpperCase() + palette.saturation_level.slice(1)}
+          {palette.saturation_level ? palette.saturation_level.charAt(0).toUpperCase() + palette.saturation_level.slice(1) : '—'}
         </span>
       </div>
 
