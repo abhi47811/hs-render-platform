@@ -48,13 +48,24 @@ DO NOT add anything that was not already present in the input image.
 The room MUST remain 100% empty in the output — just walls, floor, ceiling, windows, and doors.
 If you add even one piece of furniture, the task has FAILED.
 
+⚠️ STRUCTURAL PRESERVATION — ABSOLUTE RULE:
+DO NOT add new windows. DO NOT remove existing windows.
+DO NOT add new doors. DO NOT remove existing doors.
+DO NOT add new openings, arches, or passages of ANY kind.
+DO NOT change the size, shape, or position of any window or door.
+Count the windows in the input image — the output MUST have the EXACT SAME NUMBER of windows.
+Count the doors in the input image — the output MUST have the EXACT SAME NUMBER of doors.
+If the input has ONE window, the output must have EXACTLY ONE window. Not two. Not zero.
+Changing the room's architectural structure is a CRITICAL FAILURE.
+
 WHAT THIS TASK IS:
 You are an architectural visualization renderer. I am giving you a 3D render from Coohom interior design software. Your only job is to apply photorealistic visual treatment to the existing surfaces and lighting — nothing else. The room content (empty space) must be IDENTICAL before and after. Only the visual quality of the surfaces and lighting changes.
 
 WHAT STAYS EXACTLY THE SAME (do not change any of these):
 - The room is completely empty — no furniture, no objects (THIS DOES NOT CHANGE)
 - Room layout, wall positions, ceiling height, floor area
-- Location and size of every window, door, and door frame
+- EXACT number, location, and size of every window (DO NOT ADD OR REMOVE WINDOWS)
+- EXACT number, location, and size of every door (DO NOT ADD OR REMOVE DOORS)
 - Camera angle, perspective, and composition
 
 WHAT YOU MUST IMPROVE (surfaces and lighting only):

@@ -638,6 +638,7 @@ export function StagingPageClient({
             onPromptSuggestionAccepted={setPrompt}
             cp1Status={cpStatuses.cp1}
             cp2Status={cpStatuses.cp2}
+            existingRenders={renders.map(r => ({ pass_number: r.pass_number, status: r.status }))}
           />
 
           {/* Info hint */}

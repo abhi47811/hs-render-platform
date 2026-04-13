@@ -9,11 +9,12 @@ interface PassSelectorProps {
 }
 
 const PASSES = [
-  { number: 1, name: 'Flooring' },
-  { number: 2, name: 'Main Furniture' },
-  { number: 3, name: 'Accent Pieces' },
-  { number: 4, name: 'Lighting' },
-  { number: 5, name: 'Decor' },
+  { number: 1, name: 'Style Seed' },
+  { number: 2, name: 'Flooring' },
+  { number: 3, name: 'Main Furniture' },
+  { number: 4, name: 'Accent Pieces' },
+  { number: 5, name: 'Lighting' },
+  { number: 6, name: 'Decor' },
 ];
 
 function CheckIcon() {

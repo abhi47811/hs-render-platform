@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { FailureRecoveryPanel, detectFailureType } from './FailureRecoveryPanel';
 import type { FailureType } from './FailureRecoveryPanel';
 
@@ -19,6 +19,9 @@ interface GenerateButtonProps {
   // Checkpoint gates — CP1 gates Pass 1, CP2 gates Passes 2-5
   cp1Status?: 'pending' | 'shared' | 'approved';
   cp2Status?: 'pending' | 'shared' | 'approved';
+  // Bug Fix 3: pass renders from DB so button stays disabled across page reloads
+  // if a render for this pass is already in-flight (status generating/pending)
+  existingRenders?: { pass_number: number; status: string }[];
 }
 
 interface GenerateResponse {
@@ -96,6 +99,7 @@ export function GenerateButton({
   onPromptSuggestionAccepted,
   cp1Status,
   cp2Status,
+  existingRenders = [],
 }: GenerateButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -105,6 +109,44 @@ export function GenerateButton({
   // Sec 31: failure recovery
   const [failureType, setFailureType] = useState<FailureType | null>(null);
   const [retryCount, setRetryCount] = useState(0);
+
+  // Bug Fix 3: check if this pass already has an in-flight render in the DB
+  // (survives page reloads — relies on server data, not local state)
+  const hasActiveRender = existingRenders.some(
+    (r) => r.pass_number === passNumber && (r.status === 'generating' || r.status === 'pending')
+  );
+
+  // Bug Fix 2: when queued, poll every 5s by calling onComplete so the parent
+  // re-fetches renders; stop polling once renders appear or after 90s
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pollCountRef = useRef(0);
+
+  useEffect(() => {
+    if (queued) {
+      pollCountRef.current = 0;
+      pollRef.current = setInterval(() => {
+        pollCountRef.current += 1;
+        onComplete(); // triggers parent to re-fetch renders
+        // stop after 18 polls (~90s) to avoid runaway intervals
+        if (pollCountRef.current >= 18) {
+          clearInterval(pollRef.current!);
+          pollRef.current = null;
+          setQueued(false);
+        }
+      }, 5000);
+    } else {
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
+    }
+    return () => {
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
+    };
+  }, [queued]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Checkpoint gate check
   const checkpointBlock = getCheckpointBlockReason(passNumber, cp1Status, cp2Status);
@@ -184,19 +226,21 @@ export function GenerateButton({
 
       <button
         onClick={handleGenerate}
-        disabled={isLoading || !prompt.trim() || success || queued || !!checkpointBlock}
+        disabled={isLoading || !prompt.trim() || success || queued || !!checkpointBlock || hasActiveRender}
         className={`w-full py-3 px-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 min-h-[48px] ${
           checkpointBlock
             ? 'bg-stone-100 text-stone-400 cursor-not-allowed'
             : success
               ? 'bg-emerald-600 text-white'
-              : queued
+              : hasActiveRender
                 ? 'bg-amber-500 text-white cursor-not-allowed'
-                : isLoading
-                  ? 'bg-stone-700 text-white cursor-not-allowed'
-                  : prompt.trim()
-                    ? 'bg-stone-900 hover:bg-stone-800 text-white cursor-pointer'
-                    : 'bg-stone-200 text-stone-400 cursor-not-allowed'
+                : queued
+                  ? 'bg-amber-500 text-white cursor-not-allowed'
+                  : isLoading
+                    ? 'bg-stone-700 text-white cursor-not-allowed'
+                    : prompt.trim()
+                      ? 'bg-stone-900 hover:bg-stone-800 text-white cursor-pointer'
+                      : 'bg-stone-200 text-stone-400 cursor-not-allowed'
         }`}
       >
         {isLoading ? (
@@ -208,6 +252,11 @@ export function GenerateButton({
           <>
             <CheckIcon />
             Generated Successfully!
+          </>
+        ) : hasActiveRender ? (
+          <>
+            <SpinnerIcon />
+            Rendering in progress…
           </>
         ) : queued ? (
           <>
@@ -281,7 +330,7 @@ export function GenerateButton({
       {queued && (
         <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
           <p className="text-sm text-amber-700">
-            <span className="font-semibold">Queued!</span> Another generation is in progress. Your request will start automatically — check the queue indicator in the top bar.
+            <span className="font-semibold">Queued!</span> Another generation is in progress. Checking for results every 5s — renders will appear automatically when ready.
           </p>
         </div>
       )}
