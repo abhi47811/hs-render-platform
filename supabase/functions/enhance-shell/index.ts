@@ -250,7 +250,7 @@ Deno.serve(async (req: Request) => {
         room_id,
         project_id,
         pass_number: 1,
-        pass_type: "combined",
+        pass_type: "style_seed",
         variation_label: "A",
         resolution_tier: resolutionTier,
         storage_url: stagedUrl,
