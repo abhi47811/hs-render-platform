@@ -94,7 +94,7 @@ const uploadToSupabase = async (
 
 /**
  * Full 14-ref multi-part Gemini request body.
- * Images are sent as inline_data parts BEFORE the text prompt,
+ * Images are sent as inlineData parts BEFORE the text prompt,
  * matching Gemini's expected ordering for image-conditioned generation.
  */
 const generateWithGemini = async (
@@ -116,12 +116,14 @@ const generateWithGemini = async (
     })
   )
 
-  // Add successfully fetched images as inline_data parts (maintains slot order)
+  // Add successfully fetched images as inlineData parts (maintains slot order)
+  // NOTE: Gemini REST API requires camelCase field names (inlineData, mimeType)
+  // snake_case (inline_data, mime_type) is silently ignored, producing text-only requests
   for (const result of imageResults) {
     if (result.status === 'fulfilled' && result.value.ok && result.value.base64) {
       parts.push({
-        inline_data: {
-          mime_type: 'image/jpeg',
+        inlineData: {
+          mimeType: 'image/jpeg',
           data: result.value.base64,
         },
       })
@@ -158,14 +160,15 @@ const generateWithGemini = async (
     throw new Error('No image generated in Gemini response')
   }
 
+  // Gemini REST API returns inlineData (camelCase) in the response too
   const imagePart = result.candidates[0].content.parts.find(
-    (p: Record<string, unknown>) => p.inline_data
+    (p: Record<string, unknown>) => p.inlineData
   )
-  if (!imagePart?.inline_data?.data) {
+  if (!imagePart?.inlineData?.data) {
     throw new Error('No image data in Gemini response')
   }
 
-  return imagePart.inline_data.data as string
+  return (imagePart.inlineData as Record<string, unknown>).data as string
 }
 
 /**
@@ -300,20 +303,24 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // Log cost
-    await supabase.from('api_cost_log').insert({
-      project_id,
-      room_id,
-      call_type: 'generation',
-      resolution_tier,
-      cost_inr: totalCost,
-      gemini_model: 'gemini-3.1-flash-image-preview',
-    })
+    // Log cost — only when at least 1 render was actually produced
+    // (avoids charging for silent Gemini failures where 0 renders were saved)
+    const actualCost = (costPerImage * renderIds.length)
+    if (renderIds.length > 0) {
+      await supabase.from('api_cost_log').insert({
+        project_id,
+        room_id,
+        call_type: 'generation',
+        resolution_tier,
+        cost_inr: actualCost,
+        gemini_model: 'gemini-3.1-flash-image-preview',
+      })
+    }
 
     // Update queue to complete
     await supabase
       .from('generation_queue')
-      .update({ status: 'complete', completed_at: new Date().toISOString(), api_cost: totalCost })
+      .update({ status: 'complete', completed_at: new Date().toISOString(), api_cost: actualCost })
       .eq('id', queueId)
 
     // Update rooms.current_pass
@@ -327,12 +334,12 @@ Deno.serve(async (req: Request) => {
       project_id,
       room_id,
       action_type: 'generation_complete',
-      action_description: `Pass ${pass_number} (${pass_type}) — ${renderIds.length}/${variationLabels.length} render${renderIds.length !== 1 ? 's' : ''} generated · ${resolution_tier} · ₹${totalCost.toFixed(2)}`,
+      action_description: `Pass ${pass_number} (${pass_type}) — ${renderIds.length}/${variationLabels.length} render${renderIds.length !== 1 ? 's' : ''} generated · ${resolution_tier} · ₹${actualCost.toFixed(2)}`,
       metadata: {
         pass_number, pass_type, resolution_tier,
         variation_count, render_ids: renderIds,
         reference_count: reference_urls.length,
-        total_cost: totalCost,
+        total_cost: actualCost,
       },
     })
 

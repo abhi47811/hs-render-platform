@@ -109,7 +109,16 @@ Deno.serve(async (req: Request) => {
     if (!imageResponse.ok) throw new Error(`Could not fetch render image: ${imageResponse.status}`)
 
     const imageBuffer = await imageResponse.arrayBuffer()
-    const imageB64 = btoa(String.fromCharCode(...new Uint8Array(imageBuffer)))
+    // Chunked base64 encoding — avoids "Maximum call stack size exceeded"
+    // that occurs when spreading large Uint8Arrays as function arguments
+    const bytes = new Uint8Array(imageBuffer)
+    let binary = ''
+    const chunkSize = 8192
+    for (let i = 0; i < bytes.byteLength; i += chunkSize) {
+      const chunk = bytes.subarray(i, i + chunkSize)
+      binary += String.fromCharCode(...chunk)
+    }
+    const imageB64 = btoa(binary)
     const mimeType = imageResponse.headers.get('content-type') ?? 'image/jpeg'
 
     // ── Call Gemini 2.0 Flash (vision-only — cheaper than pro-image) ──────
@@ -122,7 +131,7 @@ Deno.serve(async (req: Request) => {
           contents: [{
             parts: [
               { text: DETECTION_PROMPT },
-              { inline_data: { mime_type: mimeType, data: imageB64 } },
+              { inlineData: { mimeType: mimeType, data: imageB64 } },
             ],
           }],
           generationConfig: {
