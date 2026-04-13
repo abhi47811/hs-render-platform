@@ -8,6 +8,7 @@ import { EnvironmentReplacer } from '@/components/shell/EnvironmentReplacer'
 import { CheckpointPanel } from '@/components/shell/CheckpointPanel'
 import { StyleConfigurator } from '@/components/staging/StyleConfigurator'
 import { SpatialAnalysis } from '@/components/shell/SpatialAnalysis'
+import { FloorPlanUpload } from '@/components/shell/FloorPlanUpload'
 import { ColourPalette } from '@/components/staging/ColourPalette'
 import { TeamComments } from '@/components/comments/TeamComments'
 import { RoomStatusControl } from '@/components/project/RoomStatusControl'
@@ -323,6 +324,35 @@ export default async function RoomPage({ params }: RoomPageProps) {
                     projectId={params.id}
                     shellUrl={room.photorealistic_shell_url}
                     existingAnalysis={room.spatial_analysis as any}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Floor Plan — shown once any shell is uploaded */}
+            {room.original_shell_url && (
+              <div className="bg-white rounded-xl border border-stone-200 overflow-hidden">
+                <div className="px-5 py-4 border-b border-stone-100 flex items-center justify-between">
+                  <div>
+                    <h2 className="text-sm font-semibold text-stone-800">Floor Plan</h2>
+                    <p className="text-xs text-stone-400 mt-0.5">
+                      {room.floor_plan_data
+                        ? 'Parsed — spatial data injected into every generation'
+                        : 'Upload to improve furniture placement accuracy'}
+                    </p>
+                  </div>
+                  {room.floor_plan_data && (
+                    <span className="text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                      Parsed
+                    </span>
+                  )}
+                </div>
+                <div className="p-5">
+                  <FloorPlanUpload
+                    roomId={params.roomId}
+                    projectId={params.id}
+                    existingUrl={(room as any).floor_plan_url ?? null}
+                    existingData={(room as any).floor_plan_data ?? null}
                   />
                 </div>
               </div>
