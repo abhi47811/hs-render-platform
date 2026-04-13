@@ -41,6 +41,10 @@ import { CheckpointPanel } from '@/components/shell/CheckpointPanel'
 import { ShellEnhancement } from '@/components/staging/ShellEnhancement'
 // S10: Spatial Analysis
 import { SpatialAnalysis } from '@/components/staging/SpatialAnalysis'
+// Sprint 9 — A7: Style Seed Evolution Timeline
+import { StyleSeedEvolution } from '@/components/staging/StyleSeedEvolution'
+// Sprint 9 — A8: Prompt Version History
+import { PromptVersionHistory } from '@/components/staging/PromptVersionHistory'
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -461,6 +465,9 @@ export function StagingPageClient({
             />
           )}
 
+          {/* Sprint 9 — A7: Style Seed Evolution Timeline */}
+          <StyleSeedEvolution renders={renders} />
+
           {/* Prompt Builder — 9-block architecture */}
           <PromptBuilder
             roomType={room.room_type}
@@ -559,17 +566,25 @@ export function StagingPageClient({
 
           {/* Sprint 8 — A2: Preview prompt button + auto-save indicator */}
           <div className="flex items-center justify-between">
-            <button
-              onClick={() => setShowPromptPreview(true)}
-              disabled={!prompt.trim()}
-              className="flex items-center gap-1.5 text-xs text-stone-500 hover:text-stone-800 transition-colors disabled:opacity-40"
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                <circle cx="12" cy="12" r="3"/>
-              </svg>
-              Preview prompt
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setShowPromptPreview(true)}
+                disabled={!prompt.trim()}
+                className="flex items-center gap-1.5 text-xs text-stone-500 hover:text-stone-800 transition-colors disabled:opacity-40"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+                Preview prompt
+              </button>
+              {/* Sprint 9 — A8: Prompt Version History */}
+              <PromptVersionHistory
+                roomId={room.id}
+                passNumber={selectedPass}
+                onRestore={setPrompt}
+              />
+            </div>
             <AutoSaveIndicator saveState={saveState} />
           </div>
 

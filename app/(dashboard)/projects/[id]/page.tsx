@@ -14,6 +14,9 @@ import { ProjectAssignControl } from '@/components/project/ProjectAssignControl'
 import { ProjectPriorityControl } from '@/components/project/ProjectPriorityControl'
 import { SlaExtendButton } from '@/components/project/SlaExtendButton'
 import { ProjectNotes } from '@/components/project/ProjectNotes'
+import { RoomSequencingUI } from '@/components/project/RoomSequencingUI'
+import { ClientRevisionTracker } from '@/components/project/ClientRevisionTracker'
+import { ProjectArchiveButton } from '@/components/project/ProjectArchiveButton'
 
 export const dynamic = 'force-dynamic'
 
@@ -50,6 +53,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
     .from('rooms')
     .select('*, renders(id, status)')
     .eq('project_id', params.id)
+    .order('display_order', { ascending: true, nullsFirst: false })
     .order('created_at')
 
   const { data: assignedProfile } = project.assigned_to
@@ -141,6 +145,9 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
                 ✓ View Delivery Summary
               </Link>
             )}
+            {project.status === 'delivered' && (
+              <ProjectArchiveButton projectId={project.id} isArchived={project.is_archived ?? false} />
+            )}
           </div>
 
           {/* Stats row */}
@@ -170,6 +177,9 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
           {/* Internal Notes */}
           <ProjectNotes projectId={params.id} />
 
+          {/* Client Revision Requests */}
+          <ClientRevisionTracker projectId={params.id} />
+
           {/* Sec 08: Room pass timeline strip */}
           {rooms.length > 0 && (
             <RoomPassTimeline
@@ -185,61 +195,10 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
             />
           )}
 
-          {/* Room cards */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-xs font-semibold text-stone-500 uppercase tracking-wider">Rooms</h2>
-              <div className="flex items-center gap-3">
-                <span className="text-xs text-stone-400">{rooms.length} room{rooms.length !== 1 ? 's' : ''}</span>
-                <Link
-                  href={`/projects/${params.id}/rooms/new`}
-                  className="inline-flex items-center gap-1 text-xs font-semibold text-stone-700 bg-stone-100 hover:bg-stone-200 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M5 12h14"/><path d="M12 5v14"/>
-                  </svg>
-                  Add Room
-                </Link>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {rooms.map((room) => {
-                const statusCfg = ROOM_STATUS_CONFIG[room.status] ?? ROOM_STATUS_CONFIG.not_started
-                const renderCount = Array.isArray(room.renders) ? room.renders.length : 0
-                const hasShell = !!room.original_shell_url
-                return (
-                  <Link key={room.id} href={`/projects/${params.id}/rooms/${room.id}`}>
-                    <div className="group bg-white rounded-lg border border-stone-200 hover:border-stone-400 hover:shadow-sm transition-all cursor-pointer p-4 flex items-center gap-4">
-                      {/* Room type badge */}
-                      <div className="w-10 h-10 rounded bg-stone-100 flex items-center justify-center flex-shrink-0 text-xs font-bold text-stone-500 group-hover:bg-stone-200 transition-colors">
-                        {ROOM_TYPE_ICONS[room.room_type] ?? '—'}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-0.5">
-                          <p className="text-sm font-medium text-stone-800 truncate">{room.room_name}</p>
-                          <span className="text-xs text-stone-400 flex-shrink-0">{room.room_type}</span>
-                        </div>
-                        <div className="flex items-center gap-3 text-xs text-stone-500">
-                          <span className={`flex items-center gap-1 ${statusCfg.color}`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${statusCfg.dot}`} />
-                            {statusCfg.label}
-                          </span>
-                          {hasShell && <span className="text-stone-400">Shell ✓</span>}
-                          {renderCount > 0 && <span className="text-stone-400">{renderCount} render{renderCount !== 1 ? 's' : ''}</span>}
-                          {room.current_pass > 0 && <span className="text-stone-400">P{room.current_pass}/6</span>}
-                          {(room as any).style_locked && <span className="text-emerald-600">🔒</span>}
-                        </div>
-                      </div>
-                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-stone-300 group-hover:text-stone-500 flex-shrink-0 transition-colors">
-                        <path d="M9 18l6-6-6-6"/>
-                      </svg>
-                    </div>
-                  </Link>
-                )
-              })}
-            </div>
-          </div>
+          {/* Room cards with drag-to-reorder */}
+          {rooms.length > 0 && (
+            <RoomSequencingUI rooms={rooms} projectId={params.id} />
+          )}
 
           {/* Staging engine prompt */}
           {rooms.length === 0 && (

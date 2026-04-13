@@ -15,10 +15,11 @@ export default function DashboardPage() {
     const fetchData = async () => {
       const supabase = createClient()
 
-      // Fetch projects
+      // Fetch projects (exclude archived)
       const { data: rawProjectsData, error } = await supabase
         .from('projects')
         .select('*, room_count:rooms(count), rooms(id, status)')
+        .or('is_archived.is.null,is_archived.eq.false')
         .order('created_at', { ascending: false })
       const rawProjects = rawProjectsData ?? []
 
