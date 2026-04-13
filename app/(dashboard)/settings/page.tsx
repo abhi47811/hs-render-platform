@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { ProfileForm } from '@/components/settings/ProfileForm'
 import { TeamMembersPanel } from '@/components/settings/TeamMembersPanel'
+import { RevisionLimitPanel } from '@/components/settings/RevisionLimitPanel'
 
 export const metadata = {
   title: 'Settings | Houspire Staging',
@@ -27,6 +28,24 @@ export default async function SettingsPage() {
     .from('profiles')
     .select('id, full_name, role, created_at')
     .order('created_at', { ascending: true })
+
+  // Sec 41 — Revision-limit admin config: figure out the current default
+  // as the most common revision_limit across active projects.
+  const { data: activeRows = [], count: activeProjectCount = 0 } = await supabase
+    .from('projects')
+    .select('revision_limit', { count: 'exact' })
+    .in('status', ['intake', 'in_progress', 'needs_revision', 'qc'])
+
+  const counts = new Map<number, number>()
+  for (const r of activeRows ?? []) {
+    const rl = r.revision_limit ?? 2
+    counts.set(rl, (counts.get(rl) ?? 0) + 1)
+  }
+  let currentRevisionLimit = 2
+  let max = 0
+  counts.forEach((c, rl) => {
+    if (c > max) { max = c; currentRevisionLimit = rl }
+  })
 
   return (
     <div className="min-h-full" style={{ background: 'var(--bg)' }}>
@@ -107,6 +126,32 @@ export default async function SettingsPage() {
             />
           </div>
         </section>
+
+        {/* Workspace Policy — admin only */}
+        {isAdmin && (
+          <section
+            className="rounded-xl"
+            style={{ background: 'var(--surface)', border: '1px solid var(--border)', boxShadow: 'var(--shadow-sm)' }}
+          >
+            <div
+              className="px-6 py-4"
+              style={{ borderBottom: '1px solid var(--border)' }}
+            >
+              <h2
+                className="text-[11px] font-bold uppercase tracking-[0.1em]"
+                style={{ color: 'var(--text-muted)' }}
+              >
+                Workspace Policy
+              </h2>
+            </div>
+            <div className="px-6 py-5">
+              <RevisionLimitPanel
+                currentDefault={currentRevisionLimit}
+                activeProjectCount={activeProjectCount ?? 0}
+              />
+            </div>
+          </section>
+        )}
 
         {/* Platform info section */}
         <section

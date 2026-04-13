@@ -161,6 +161,73 @@ export default async function AnalyticsPage() {
     return { projectId: p.id, clientName: p.client_name, city: p.city, totalCost, margin: 4999 - totalCost, renderCount: renderCountByProject[p.id] ?? 0 }
   }).filter(r => r.renderCount > 0 || r.totalCost > 0)
 
+  // --- Sec 45: Quality Metrics ---
+  const { data: revisionsRows = [] } = await supabase
+    .from('revisions')
+    .select('room_id, element_tags')
+  const { data: deliveredRooms = [] } = await supabase
+    .from('rooms')
+    .select('id, status')
+    .eq('status', 'delivered')
+
+  const revisionsByDeliveredRoom = (revisionsRows ?? []).filter(
+    r => (deliveredRooms ?? []).some(d => d.id === r.room_id)
+  )
+  const avgRevisionRounds = (deliveredRooms ?? []).length > 0
+    ? (revisionsByDeliveredRoom.length / (deliveredRooms ?? []).length).toFixed(2)
+    : '0.00'
+
+  // Common revision element tags
+  const tagCounts: Record<string, number> = {}
+  ;(revisionsRows ?? []).forEach((r: any) => {
+    const tags = Array.isArray(r.element_tags) ? r.element_tags : []
+    tags.forEach((t: unknown) => {
+      if (typeof t === 'string') tagCounts[t] = (tagCounts[t] ?? 0) + 1
+    })
+  })
+  const topRevisionTags = Object.entries(tagCounts).sort(([, a], [, b]) => b - a).slice(0, 6)
+
+  // Artifact flag rate — percentage of renders with at least one flag
+  const { data: renderFlagRows = [], count: totalRenderCount = 0 } = await supabase
+    .from('renders')
+    .select('artifact_flags', { count: 'exact' })
+    .not('artifact_flags', 'is', null)
+  const flaggedRenderCount = (renderFlagRows ?? []).filter(
+    r => Array.isArray(r.artifact_flags) && (r.artifact_flags as unknown[]).length > 0
+  ).length
+  const artifactFlagRate = (totalRenderCount ?? 0) > 0
+    ? Math.round((flaggedRenderCount / (totalRenderCount ?? 1)) * 100)
+    : 0
+
+  // --- Sec 45: Vault / Library Usage ---
+  const { data: topVaultEntries = [] } = await supabase
+    .from('style_vault')
+    .select('id, style_name, room_type, usage_count')
+    .order('usage_count', { ascending: false, nullsFirst: false })
+    .limit(5)
+
+  const { data: topTemplates = [] } = await supabase
+    .from('prompt_templates')
+    .select('id, name, room_type, style, usage_count, success_rate')
+    .eq('is_active', true)
+    .order('usage_count', { ascending: false, nullsFirst: false })
+    .limit(5)
+
+  const { data: topFurniture = [] } = await supabase
+    .from('furniture_references')
+    .select('id, name, category, usage_count')
+    .eq('is_active', true)
+    .order('usage_count', { ascending: false, nullsFirst: false })
+    .limit(5)
+
+  const { data: topSuccessTemplates = [] } = await supabase
+    .from('prompt_templates')
+    .select('id, name, room_type, success_rate, usage_count')
+    .eq('is_active', true)
+    .gt('usage_count', 0)
+    .order('success_rate', { ascending: false, nullsFirst: false })
+    .limit(5)
+
   // --- Monthly trend — last 6 months ---
   const monthlyData: { month: string; delivered: number; apiCostInr: number }[] = []
   for (let i = 5; i >= 0; i--) {
@@ -364,7 +431,88 @@ export default async function AnalyticsPage() {
           <div className="px-6 py-4"><CostBreakdownTable rows={costRows} /></div>
         </div>
 
-        {/* Row 7: Recent Activity */}
+        {/* Row 7: Quality Metrics (Sec 45) */}
+        <div className="rounded-xl" style={{ background: 'var(--surface)', border: '1px solid var(--border)', boxShadow: 'var(--shadow-sm)' }}>
+          <div className="px-6 py-4" style={{ borderBottom: '1px solid var(--border)' }}>
+            <h2 className="text-[11px] font-bold uppercase tracking-[0.1em]" style={{ color: 'var(--text-muted)' }}>Quality Metrics</h2>
+          </div>
+          <div className="px-6 py-5 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-2 gap-3">
+              <StatsCard
+                label="Avg Revision Rounds"
+                value={avgRevisionRounds}
+                subtext={`${(deliveredRooms ?? []).length} delivered rooms`}
+                accent={Number(avgRevisionRounds) <= 1 ? 'success' : Number(avgRevisionRounds) <= 2 ? 'warning' : 'danger'}
+              />
+              <StatsCard
+                label="Artifact Flag Rate"
+                value={`${artifactFlagRate}%`}
+                subtext={`${flaggedRenderCount} / ${totalRenderCount ?? 0} renders`}
+                accent={artifactFlagRate <= 10 ? 'success' : artifactFlagRate <= 25 ? 'warning' : 'danger'}
+              />
+            </div>
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wider mb-3" style={{ color: 'var(--text-muted)' }}>Common Revision Types</p>
+              {topRevisionTags.length === 0 ? (
+                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>No revisions recorded yet.</p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {topRevisionTags.map(([tag, count]) => (
+                    <span
+                      key={tag}
+                      className="text-xs font-medium px-2.5 py-1 rounded-full"
+                      style={{ background: 'var(--surface-3)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}
+                    >
+                      {tag} · <span className="tabular-nums font-semibold">{count}</span>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Row 8: Vault / Library Usage (Sec 45) */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <UsageList
+            title="Top Style Vault Seeds"
+            rows={(topVaultEntries ?? []).map(e => ({
+              id: e.id,
+              primary: e.style_name,
+              secondary: e.room_type,
+              metric: `${e.usage_count ?? 0}x`,
+            }))}
+          />
+          <UsageList
+            title="Most-Used Prompt Templates"
+            rows={(topTemplates ?? []).map(e => ({
+              id: e.id,
+              primary: e.name,
+              secondary: `${e.room_type} · ${e.style}`,
+              metric: `${e.usage_count ?? 0}x`,
+            }))}
+          />
+          <UsageList
+            title="Most-Used Furniture Refs"
+            rows={(topFurniture ?? []).map(e => ({
+              id: e.id,
+              primary: e.name ?? e.category,
+              secondary: e.category,
+              metric: `${e.usage_count ?? 0}x`,
+            }))}
+          />
+          <UsageList
+            title="Template Success-Rate Ranking"
+            rows={(topSuccessTemplates ?? []).map(e => ({
+              id: e.id,
+              primary: e.name,
+              secondary: `${e.room_type} · ${e.usage_count ?? 0}x used`,
+              metric: `${Math.round(Number(e.success_rate ?? 0) * 100)}%`,
+            }))}
+          />
+        </div>
+
+        {/* Row 9: Recent Activity */}
         <div
           className="rounded-xl p-6"
           style={{ background: 'var(--surface)', border: '1px solid var(--border)', boxShadow: 'var(--shadow-sm)' }}
@@ -378,6 +526,41 @@ export default async function AnalyticsPage() {
           <ActivityFeed activities={activityData} />
         </div>
 
+      </div>
+    </div>
+  )
+}
+
+function UsageList({
+  title,
+  rows,
+}: {
+  title: string
+  rows: Array<{ id: string; primary: string; secondary?: string; metric: string }>
+}) {
+  return (
+    <div className="rounded-xl" style={{ background: 'var(--surface)', border: '1px solid var(--border)', boxShadow: 'var(--shadow-sm)' }}>
+      <div className="px-6 py-4" style={{ borderBottom: '1px solid var(--border)' }}>
+        <h2 className="text-[11px] font-bold uppercase tracking-[0.1em]" style={{ color: 'var(--text-muted)' }}>{title}</h2>
+      </div>
+      <div className="px-6 py-2">
+        {rows.length === 0 ? (
+          <p className="text-xs py-4 text-center" style={{ color: 'var(--text-muted)' }}>No data yet</p>
+        ) : (
+          rows.map(r => (
+            <div key={r.id} className="flex items-center justify-between py-2.5" style={{ borderBottom: '1px solid var(--border)' }}>
+              <div className="min-w-0 flex-1 pr-3">
+                <p className="text-sm font-medium truncate" style={{ color: 'var(--text-secondary)' }}>{r.primary}</p>
+                {r.secondary && (
+                  <p className="text-[11px] truncate" style={{ color: 'var(--text-muted)' }}>{r.secondary}</p>
+                )}
+              </div>
+              <span className="text-sm font-bold tabular-nums flex-shrink-0" style={{ color: 'var(--text-primary)' }}>
+                {r.metric}
+              </span>
+            </div>
+          ))
+        )}
       </div>
     </div>
   )

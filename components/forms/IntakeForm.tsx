@@ -142,6 +142,8 @@ export function IntakeForm({ teamMembers }: IntakeFormProps) {
   const supabase = createClient()
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const [referenceFiles, setReferenceFiles] = useState<File[]>([])
+  const [uploading, setUploading] = useState(false)
 
   const {
     register,
@@ -175,6 +177,26 @@ export function IntakeForm({ teamMembers }: IntakeFormProps) {
 
       const slaDeadline = calculateSlaDeadline()
 
+      // 0. Upload client reference images (if any) to client-refs bucket
+      let clientReferenceUrls: string[] = []
+      if (referenceFiles.length > 0) {
+        setUploading(true)
+        const uploads = await Promise.all(
+          referenceFiles.map(async (file) => {
+            const ext = file.name.split('.').pop() || 'jpg'
+            const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
+            const { error: upErr } = await supabase.storage
+              .from('client-refs')
+              .upload(path, file, { cacheControl: '3600', upsert: false })
+            if (upErr) throw upErr
+            const { data: pub } = supabase.storage.from('client-refs').getPublicUrl(path)
+            return pub.publicUrl
+          })
+        )
+        clientReferenceUrls = uploads
+        setUploading(false)
+      }
+
       // 1. Create project
       const { data: project, error: projectError } = await supabase
         .from('projects')
@@ -197,6 +219,7 @@ export function IntakeForm({ teamMembers }: IntakeFormProps) {
           status: 'intake',
           sla_deadline: slaDeadline,
           total_api_cost: 0,
+          client_reference_images: clientReferenceUrls,
         })
         .select('id')
         .single()
@@ -462,6 +485,53 @@ export function IntakeForm({ teamMembers }: IntakeFormProps) {
             />
           </div>
         </div>
+      </div>
+
+      {/* ── Client Reference Images ── */}
+      <div className={sectionClass}>
+        <p className={sectionTitle}>
+          Client Reference Images
+          <span className="text-stone-400 font-normal ml-1.5 text-xs">(optional · inspiration shots, floorplans, existing photos)</span>
+        </p>
+        <label className="flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-stone-200 hover:border-stone-400 bg-stone-50 py-6 px-4 cursor-pointer transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-stone-400">
+            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+          <span className="text-xs font-medium text-stone-600">Click to upload — JPG, PNG, WebP</span>
+          <span className="text-[10px] text-stone-400">Max 10 images, 5MB each</span>
+          <input
+            type="file"
+            multiple
+            accept="image/jpeg,image/png,image/webp"
+            onChange={(e) => {
+              const files = Array.from(e.target.files || [])
+              const valid = files.filter((f) => f.size <= 5 * 1024 * 1024)
+              setReferenceFiles((prev) => [...prev, ...valid].slice(0, 10))
+              e.target.value = ''
+            }}
+            className="hidden"
+          />
+        </label>
+        {referenceFiles.length > 0 && (
+          <div className="mt-3 grid grid-cols-3 sm:grid-cols-5 gap-2">
+            {referenceFiles.map((file, idx) => (
+              <div key={idx} className="relative group aspect-square rounded-lg overflow-hidden border border-stone-200 bg-stone-100">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={URL.createObjectURL(file)} alt={file.name} className="w-full h-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => setReferenceFiles((prev) => prev.filter((_, i) => i !== idx))}
+                  className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/70 text-white text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  aria-label="Remove image"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* ── Vastu ── */}

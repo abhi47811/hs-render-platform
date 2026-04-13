@@ -96,6 +96,8 @@ export interface Project {
   project_style_anchor: Record<string, unknown> | null
   /** Sec 21: project-level style seed URL — propagated from the first room to lock a style seed */
   style_seed_url: string | null
+  /** Sec 6: client-uploaded inspiration/reference image URLs (stored in client-refs bucket) */
+  client_reference_images: string[] | null
   // Joined relations (present when fetched with select)
   rooms?: Room[]
   assigned_profile?: Profile | null
