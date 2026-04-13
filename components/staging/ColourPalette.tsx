@@ -77,7 +77,7 @@ function SwatchGrid({ swatches, editable, onSwatchChange }: {
 }) {
   return (
     <div className="grid grid-cols-3 gap-3">
-      {swatches.map((swatch, i) => (
+      {(swatches ?? []).map((swatch, i) => (
         <div key={swatch.role ?? i} className="space-y-1.5">
           {/* Colour block */}
           <div className="relative">
@@ -164,7 +164,7 @@ function PaletteDisplay({ palette, editable, onChange }: {
       <div className="bg-white border border-stone-100 rounded-xl overflow-hidden">
         <table className="w-full text-xs">
           <tbody>
-            {palette.swatches.map((s, i) => (
+            {(palette.swatches ?? []).map((s, i) => (
               <tr key={i} className="border-b border-stone-50 last:border-0">
                 <td className="px-3 py-2 w-8">
                   <div className="w-4 h-4 rounded border border-stone-200" style={{ backgroundColor: s.hex }} />
@@ -199,8 +199,12 @@ export function ColourPalette({
   const router = useRouter()
   const supabase = createClient()
 
-  const [step, setStep] = useState<Step>(existingPalette ? 'locked' : 'idle')
-  const [palette, setPalette] = useState<ColourPaletteJSON | null>(existingPalette)
+  // Only treat existingPalette as a real locked palette if it has swatches.
+  // StyleConfigurator also writes to rooms.colour_palette with a different shape
+  // ({palette_id, lighting, notes}) — guard against that here.
+  const hasValidPalette = !!(existingPalette && Array.isArray((existingPalette as any).swatches))
+  const [step, setStep] = useState<Step>(hasValidPalette ? 'locked' : 'idle')
+  const [palette, setPalette] = useState<ColourPaletteJSON | null>(hasValidPalette ? existingPalette : null)
   const [editedPalette, setEditedPalette] = useState<ColourPaletteJSON | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isLocking, setIsLocking] = useState(false)
