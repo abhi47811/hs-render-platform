@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
     let binary = ''
     const chunkSize = 8192
     for (let i = 0; i < bytes.byteLength; i += chunkSize) {
-      const chunk = bytes.subarray(i, i + chunkSize)
+      const chunk = Array.from(bytes.subarray(i, i + chunkSize))
       binary += String.fromCharCode(...chunk)
     }
     const base64 = btoa(binary)

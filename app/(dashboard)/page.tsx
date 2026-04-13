@@ -16,10 +16,11 @@ export default function DashboardPage() {
       const supabase = createClient()
 
       // Fetch projects
-      const { data: rawProjects = [], error } = await supabase
+      const { data: rawProjectsData, error } = await supabase
         .from('projects')
         .select('*, room_count:rooms(count), rooms(id, status)')
         .order('created_at', { ascending: false })
+      const rawProjects = rawProjectsData ?? []
 
       if (error) console.error('[Pipeline] fetch error:', error)
 

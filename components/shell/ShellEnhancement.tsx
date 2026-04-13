@@ -298,7 +298,7 @@ export function ShellEnhancement({ roomId, projectId, shellUrl, projectStyle, ro
         </div>
         <div className="flex gap-2">
           <button
-            onClick={handleEnhance}
+            onClick={() => handleEnhance()}
             className="flex-1 min-h-[48px] rounded-xl bg-stone-900 text-white text-sm font-semibold hover:bg-stone-700 transition-colors cursor-pointer"
           >
             Try again
