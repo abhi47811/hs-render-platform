@@ -1,7 +1,5 @@
 import { Sidebar } from '@/components/layout/Sidebar'
 import { TopBar } from '@/components/layout/TopBar'
-// Sprint 8 — A4: cmd+K Command Palette
-import { CommandPalette } from '@/components/layout/CommandPalette'
 // Sprint 8 — A8: Global keyboard shortcuts + ? help modal
 import { KeyboardShortcuts } from '@/components/layout/KeyboardShortcuts'
 
@@ -23,7 +21,6 @@ export default function DashboardLayout({
         <main className="flex-1 overflow-auto min-h-0">{children}</main>
       </div>
       {/* Global overlays — always mounted */}
-      <CommandPalette />
       <KeyboardShortcuts />
     </div>
   )

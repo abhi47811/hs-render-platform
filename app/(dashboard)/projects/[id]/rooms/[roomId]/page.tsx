@@ -93,7 +93,7 @@ export default async function RoomPage({ params }: RoomPageProps) {
   const stepIndex = ROOM_FLOW_STEPS.findIndex((s) => s.key === activeStep)
 
   return (
-    <div className="bg-stone-50">
+    <div className="bg-stone-50 min-h-full">
 
       {/* Sticky sub-header: breadcrumb + progress strip */}
       <div className="bg-white border-b border-stone-200 sticky top-0 z-20">
@@ -155,7 +155,7 @@ export default async function RoomPage({ params }: RoomPageProps) {
 
       {/* Main content */}
       <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
 
           {/* Left: Shell + Checkpoint */}
           <div className="lg:col-span-2 space-y-5">

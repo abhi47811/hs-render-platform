@@ -2,7 +2,6 @@ import { createClient } from '@/lib/supabase/server'
 import { SignOutButton } from './SignOutButton'
 import { NotificationBell } from './NotificationBell'
 import { QueueIndicator } from '@/components/staging/QueueIndicator'
-import { CommandPalette } from './CommandPalette'
 
 export async function TopBar() {
   const supabase = await createClient()
@@ -71,12 +70,6 @@ export async function TopBar() {
 
       {/* ── Right: tools + user ─────────────────────────────── */}
       <div className="flex items-center gap-1">
-
-        {/* Search */}
-        <CommandPalette />
-
-        {/* Divider */}
-        <span className="w-px h-4 mx-1" style={{ background: 'var(--border)' }} />
 
         {/* Queue indicator */}
         <QueueIndicator />
