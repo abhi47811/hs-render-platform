@@ -4,7 +4,13 @@ const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
-const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
+const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!, {
+  auth: {
+    persistSession: false,
+    autoRefreshToken: false,
+    detectSessionInUrl: false,
+  },
+});
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -229,14 +235,18 @@ Deno.serve(async (req: Request) => {
 
       // Set both shell URLs so the flow automatically skips the Environment step
       // and lands directly on CP1 (Shell Approval) with the fully staged result
-      await supabase.from("rooms").update({
+      const { error: roomUpdateError } = await supabase.from("rooms").update({
         photorealistic_shell_url: stagedUrl,
         enhanced_shell_url: stagedUrl,   // skips Environment step
         design_style: environment.style, // skips Style Config step
       }).eq("id", room_id);
 
+      if (roomUpdateError) {
+        throw new Error(`DB room update failed: ${roomUpdateError.message}`);
+      }
+
       // Insert render row so it appears in the gallery
-      await supabase.from("renders").insert({
+      const { error: renderInsertError } = await supabase.from("renders").insert({
         room_id,
         project_id,
         pass_number: 1,
@@ -250,6 +260,10 @@ Deno.serve(async (req: Request) => {
         references_used: [`Shell: ${shell_url}`],
         api_cost: resolutionTier === "4K" ? 15.0 : resolutionTier === "2K" ? 6.0 : 2.5,
       });
+
+      if (renderInsertError) {
+        console.error("Render insert failed (non-fatal):", renderInsertError.message);
+      }
 
       // Cost log
       await supabase.from("api_cost_log").insert({
@@ -287,9 +301,13 @@ Deno.serve(async (req: Request) => {
     const photorealisticUrl = await uploadToStorage("shells", shellPath, enhancedBase64);
 
     // Update room record
-    await supabase.from("rooms")
+    const { error: shellRoomUpdateError } = await supabase.from("rooms")
       .update({ photorealistic_shell_url: photorealisticUrl })
       .eq("id", room_id);
+
+    if (shellRoomUpdateError) {
+      throw new Error(`DB room update failed: ${shellRoomUpdateError.message}`);
+    }
 
     // Cost log
     await supabase.from("api_cost_log").insert({

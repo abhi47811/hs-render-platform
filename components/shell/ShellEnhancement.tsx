@@ -13,6 +13,8 @@ interface ShellEnhancementProps {
   roomType?: string | null
   palette?: string | null
   customPrompt?: string | null
+  // Used to build the navigate-away URL on approve
+  navigateBackUrl?: string
 }
 
 type Step = 'ready' | 'enhancing' | 'staging' | 'done' | 'error'
@@ -70,7 +72,7 @@ const ENHANCEMENTS = [
   },
 ]
 
-export function ShellEnhancement({ roomId, projectId, shellUrl, projectStyle, roomType, palette, customPrompt }: ShellEnhancementProps) {
+export function ShellEnhancement({ roomId, projectId, shellUrl, projectStyle, roomType, palette, customPrompt, navigateBackUrl }: ShellEnhancementProps) {
   const router = useRouter()
   const supabase = createClient()
 
@@ -124,8 +126,13 @@ export function ShellEnhancement({ roomId, projectId, shellUrl, projectStyle, ro
 
   const handleApproveAndContinue = async () => {
     // Enhancement is already saved to DB by the Edge Function.
-    // Just refresh so the room page advances to the next step.
-    router.refresh()
+    // Use push (not refresh) so the server component fully re-fetches
+    // and the room page advances to the correct next step.
+    if (navigateBackUrl) {
+      router.push(navigateBackUrl)
+    } else {
+      router.refresh()
+    }
   }
 
   const handleRetry = async () => {

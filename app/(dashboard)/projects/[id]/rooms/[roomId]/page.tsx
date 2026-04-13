@@ -207,6 +207,7 @@ export default async function RoomPage({ params }: RoomPageProps) {
                     roomType={room.room_type ?? null}
                     palette={typeof project.style_preferences === 'string' ? project.style_preferences : null}
                     customPrompt={null}
+                    navigateBackUrl={`/projects/${params.id}/rooms/${params.roomId}`}
                   />
                 ) : !room.enhanced_shell_url ? (
                   /* Step 3: Enhanced shell — set environment visible through windows */
