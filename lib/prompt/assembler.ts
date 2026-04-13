@@ -35,6 +35,23 @@ export interface SpatialConstraintData {
   analyst_notes?: string
 }
 
+export interface FloorPlanData {
+  dimensions?: {
+    length_ft?: number
+    width_ft?: number
+    area_sqft?: number
+    ceiling_height_ft?: number
+  }
+  entry_wall?: string
+  tv_wall?: string
+  doors?: Array<{ location: string; approximate_position: string; notes: string }>
+  windows?: Array<{ location: string; approximate_position: string; light_direction: string; notes: string }>
+  fixed_elements?: string[]
+  forbidden_zones?: Array<{ reason: string; location: string; approximate_pct: string }>
+  furniture_zones?: Array<{ zone_name: string; location: string; approximate_pct: string; notes: string }>
+  analyst_notes?: string
+}
+
 export interface ColourPaletteData {
   swatches?: Array<{ role: string; hex: string; name: string; usage: string }>
   dominant_temperature?: string
@@ -67,6 +84,7 @@ export interface PromptAssemblyInput {
 
   // Locked room data
   spatial_analysis: SpatialConstraintData | null
+  floor_plan_data: FloorPlanData | null
   colour_palette: ColourPaletteData | null
 }
 
@@ -89,45 +107,104 @@ export interface AssembledPrompt {
 
 // ─── Block Builders ──────────────────────────────────────────────────────────
 
-function buildBlock1_SpatialConstraint(spatial: SpatialConstraintData | null): string {
-  if (!spatial) return ''
+function buildBlock1_SpatialConstraint(
+  spatial: SpatialConstraintData | null,
+  floorPlan: FloorPlanData | null
+): string {
+  if (!spatial && !floorPlan) return ''
 
   const parts: string[] = ['SPATIAL CONSTRAINTS (do not violate):']
 
-  if (spatial.vanishing_point) {
+  // Vanishing point (visual analysis only — not in floor plans)
+  if (spatial?.vanishing_point) {
     parts.push(`Primary vanishing point at ${spatial.vanishing_point.x_pct}% horizontal, ${spatial.vanishing_point.y_pct}% vertical in the frame.`)
   }
 
-  if (spatial.doors?.length) {
-    const doorList = spatial.doors.map(d => `${d.location} (${d.approximate_position})${d.notes ? ` — ${d.notes}` : ''}`).join('; ')
+  // Dimensions — floor plan wins over visual estimate
+  const dimSource = floorPlan?.dimensions || null
+  const ceilSource = floorPlan?.dimensions?.ceiling_height_ft
+    ? `${floorPlan.dimensions.ceiling_height_ft}ft`
+    : spatial?.ceiling_height_estimate || null
+  const areaSource = floorPlan?.dimensions?.area_sqft
+    ? `${floorPlan.dimensions.area_sqft} sq ft`
+    : spatial?.floor_area_estimate || null
+
+  if (dimSource?.length_ft && dimSource?.width_ft) {
+    parts.push(`Room dimensions: ${dimSource.length_ft}ft × ${dimSource.width_ft}ft${dimSource.area_sqft ? ` (${dimSource.area_sqft} sq ft)` : ''}.`)
+  } else if (areaSource) {
+    parts.push(`Floor area: ${areaSource}.`)
+  }
+  if (ceilSource) {
+    parts.push(`Ceiling height: ${ceilSource}.`)
+  }
+
+  // Entry and TV wall (floor plan only)
+  if (floorPlan?.entry_wall) {
+    parts.push(`Main entry: ${floorPlan.entry_wall}.`)
+  }
+  if (floorPlan?.tv_wall) {
+    parts.push(`TV wall: ${floorPlan.tv_wall}. The entertainment unit and TV should be placed on this wall.`)
+  }
+
+  // Doors — floor plan wins, fall back to visual
+  const doors = floorPlan?.doors?.length ? floorPlan.doors : (spatial?.doors ?? [])
+  if (doors.length) {
+    const doorList = doors.map(d => `${d.location} (${d.approximate_position})${d.notes ? ` — ${d.notes}` : ''}`).join('; ')
     parts.push(`Doors: ${doorList}. Maintain clearance, do not block or place furniture in door swings.`)
   }
 
-  if (spatial.windows?.length) {
-    const winList = spatial.windows.map(w => `${w.location} (${w.approximate_position}), light direction: ${w.light_direction}`).join('; ')
+  // Windows — floor plan wins, fall back to visual
+  const windows = floorPlan?.windows?.length ? floorPlan.windows : (spatial?.windows ?? [])
+  if (windows.length) {
+    const winList = windows.map(w => `${w.location} (${w.approximate_position}), light direction: ${w.light_direction}`).join('; ')
     parts.push(`Windows: ${winList}. Natural light must remain visible through windows. Do not obstruct window openings.`)
   }
 
-  if (spatial.forbidden_zones?.length) {
-    const zoneList = spatial.forbidden_zones.map(z => `${z.location} (${z.reason}: ${z.approximate_pct})`).join('; ')
-    parts.push(`FORBIDDEN ZONES — no furniture placement here: ${zoneList}.`)
+  // Fixed elements (floor plan only)
+  if (floorPlan?.fixed_elements?.length) {
+    parts.push(`Fixed structural elements: ${floorPlan.fixed_elements.join(', ')}.`)
   }
 
-  if (spatial.furniture_zones?.length) {
-    const fzList = spatial.furniture_zones.map(z => `${z.zone_name} at ${z.location}`).join('; ')
-    parts.push(`Optimal furniture placement zones: ${fzList}.`)
-  }
-
-  if (spatial.structural_features?.length) {
+  // Structural features (visual analysis only)
+  if (spatial?.structural_features?.length) {
     parts.push(`Structural features to preserve: ${spatial.structural_features.join(', ')}.`)
   }
 
-  if (spatial.lighting_conditions) {
+  // Forbidden zones — merge (floor plan first, then visual)
+  const fpForbidden = floorPlan?.forbidden_zones ?? []
+  const visForbidden = spatial?.forbidden_zones ?? []
+  const allForbidden = [...fpForbidden, ...visForbidden]
+  if (allForbidden.length) {
+    const zoneList = allForbidden.map(z => `${z.location} (${z.reason}: ${z.approximate_pct})`).join('; ')
+    parts.push(`FORBIDDEN ZONES — no furniture placement here: ${zoneList}.`)
+  }
+
+  // Furniture zones — merge (floor plan first, then visual)
+  const fpZones = floorPlan?.furniture_zones ?? []
+  const visZones = spatial?.furniture_zones ?? []
+  const allZones = [...fpZones, ...visZones]
+  if (allZones.length) {
+    const fzList = allZones.map(z => `${z.zone_name} at ${z.location}`).join('; ')
+    parts.push(`Optimal furniture placement zones: ${fzList}.`)
+  }
+
+  // Depth planes (visual only)
+  if (spatial?.depth_planes) {
+    const dp = spatial.depth_planes
+    parts.push(`Depth planes — foreground: ${dp.foreground}, mid: ${dp.mid}, background: ${dp.background}.`)
+  }
+
+  // Lighting conditions (visual only)
+  if (spatial?.lighting_conditions) {
     parts.push(`Lighting conditions: ${spatial.lighting_conditions}.`)
   }
 
-  if (spatial.analyst_notes) {
-    parts.push(`Important: ${spatial.analyst_notes}`)
+  // Analyst notes — floor plan first, then visual
+  if (floorPlan?.analyst_notes) {
+    parts.push(`Floor plan note: ${floorPlan.analyst_notes}`)
+  }
+  if (spatial?.analyst_notes) {
+    parts.push(`Visual analysis note: ${spatial.analyst_notes}`)
   }
 
   return parts.join('\n')
@@ -262,7 +339,7 @@ export function assemblePrompt(
   const blocks: PromptBlock[] = []
 
   // Block 1: Spatial Constraint
-  const b1 = buildBlock1_SpatialConstraint(input.spatial_analysis)
+  const b1 = buildBlock1_SpatialConstraint(input.spatial_analysis, input.floor_plan_data)
   blocks.push({
     block_number: 1,
     label: 'Spatial Constraint',
