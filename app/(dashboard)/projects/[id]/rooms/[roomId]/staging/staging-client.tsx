@@ -542,6 +542,7 @@ export function StagingPageClient({
           </div>
 
           {/* Generate Button — Sec 31: onPromptSuggestionAccepted bubbles recovery rewrites into prompt state */}
+          {/* Sec 6 Checkpoint gates: CP1 gates Pass 1, CP2 gates Passes 2-5 */}
           <GenerateButton
             roomId={room.id}
             projectId={room.project_id}
@@ -553,6 +554,8 @@ export function StagingPageClient({
             variationCount={variationCount}
             onComplete={handleGenerateComplete}
             onPromptSuggestionAccepted={setPrompt}
+            cp1Status={cpStatuses.cp1}
+            cp2Status={cpStatuses.cp2}
           />
 
           {/* Info hint */}

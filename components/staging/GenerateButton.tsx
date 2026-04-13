@@ -16,6 +16,9 @@ interface GenerateButtonProps {
   onComplete: () => void;
   // Sec 31: prompt suggestion from failure recovery
   onPromptSuggestionAccepted?: (newPrompt: string) => void;
+  // Checkpoint gates — CP1 gates Pass 1, CP2 gates Passes 2-5
+  cp1Status?: 'pending' | 'shared' | 'approved';
+  cp2Status?: 'pending' | 'shared' | 'approved';
 }
 
 interface GenerateResponse {
@@ -60,6 +63,26 @@ function CheckIcon() {
   );
 }
 
+/**
+ * Determine if this pass is gated by a checkpoint.
+ * Returns null if generation is allowed, or a string message if blocked.
+ */
+function getCheckpointBlockReason(
+  passNumber: number,
+  cp1Status?: 'pending' | 'shared' | 'approved',
+  cp2Status?: 'pending' | 'shared' | 'approved',
+): string | null {
+  // Pass 1 (style seed): gated on CP1 (shell approval)
+  if (passNumber === 1 && cp1Status && cp1Status !== 'approved') {
+    return 'Shell must be approved (CP1) before generating the style seed.'
+  }
+  // Passes 2+ (flooring, main furniture, etc.): gated on CP2 (style seed approval)
+  if (passNumber >= 2 && cp2Status && cp2Status !== 'approved') {
+    return 'Approve the style seed (CP2) before generating styling passes.'
+  }
+  return null
+}
+
 export function GenerateButton({
   roomId,
   projectId,
@@ -71,6 +94,8 @@ export function GenerateButton({
   variationCount,
   onComplete,
   onPromptSuggestionAccepted,
+  cp1Status,
+  cp2Status,
 }: GenerateButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -81,7 +106,12 @@ export function GenerateButton({
   const [failureType, setFailureType] = useState<FailureType | null>(null);
   const [retryCount, setRetryCount] = useState(0);
 
+  // Checkpoint gate check
+  const checkpointBlock = getCheckpointBlockReason(passNumber, cp1Status, cp2Status);
+
   const handleGenerate = async () => {
+    if (checkpointBlock) return;
+
     if (!prompt.trim()) {
       setError('Please enter a prompt before generating');
       return;
@@ -142,19 +172,31 @@ export function GenerateButton({
 
   return (
     <div className="space-y-3">
+      {/* Checkpoint gate — shown above the button when a CP is blocking generation */}
+      {checkpointBlock && (
+        <div className="p-3 bg-amber-50 border border-amber-300 rounded-lg flex items-start gap-2">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-0.5 text-amber-600">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>
+          </svg>
+          <p className="text-xs text-amber-700 font-medium">{checkpointBlock}</p>
+        </div>
+      )}
+
       <button
         onClick={handleGenerate}
-        disabled={isLoading || !prompt.trim() || success || queued}
+        disabled={isLoading || !prompt.trim() || success || queued || !!checkpointBlock}
         className={`w-full py-3 px-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 min-h-[48px] ${
-          success
-            ? 'bg-emerald-600 text-white'
-            : queued
-              ? 'bg-amber-500 text-white cursor-not-allowed'
-              : isLoading
-                ? 'bg-stone-700 text-white cursor-not-allowed'
-                : prompt.trim()
-                  ? 'bg-stone-900 hover:bg-stone-800 text-white cursor-pointer'
-                  : 'bg-stone-200 text-stone-400 cursor-not-allowed'
+          checkpointBlock
+            ? 'bg-stone-100 text-stone-400 cursor-not-allowed'
+            : success
+              ? 'bg-emerald-600 text-white'
+              : queued
+                ? 'bg-amber-500 text-white cursor-not-allowed'
+                : isLoading
+                  ? 'bg-stone-700 text-white cursor-not-allowed'
+                  : prompt.trim()
+                    ? 'bg-stone-900 hover:bg-stone-800 text-white cursor-pointer'
+                    : 'bg-stone-200 text-stone-400 cursor-not-allowed'
         }`}
       >
         {isLoading ? (
@@ -176,6 +218,13 @@ export function GenerateButton({
               <line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
             </svg>
             Queued — processing shortly
+          </>
+        ) : checkpointBlock ? (
+          <>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>
+            </svg>
+            Checkpoint Required
           </>
         ) : (
           <>
