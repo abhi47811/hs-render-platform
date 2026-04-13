@@ -7,6 +7,7 @@ import {
   type PromptAssemblyInput,
   type PassType,
   type AssembledPrompt,
+  type FloorPlanData,
 } from '@/lib/prompt/assembler'
 import { PromptBlockPreview } from './PromptBlockPreview'
 import { FurnitureRefPicker } from './FurnitureRefPicker'
@@ -35,6 +36,7 @@ interface PromptBuilderProps {
   // Locked room data
   spatialAnalysis: Record<string, unknown> | null
   colourPalette: Record<string, unknown> | null
+  floorPlanData?: FloorPlanData | null
 
   // Reference counts (for moodboard/furniture blocks)
   moodboardCount?: number
@@ -154,6 +156,7 @@ export function PromptBuilder({
   passNumber,
   spatialAnalysis,
   colourPalette,
+  floorPlanData,
   moodboardCount = 0,
   furnitureRefCount = 0,
   furnitureRefUrls: furnitureRefUrlsProp = [],
@@ -322,11 +325,12 @@ export function PromptBuilder({
     pass_instruction: passInstruction,
     spatial_analysis: spatialAnalysis as any,
     colour_palette: colourPalette as any,
+    floor_plan_data: (floorPlanData as FloorPlanData) ?? null,
   }), [
     roomType, roomName, primaryStyle, budgetBracket, city,
     occupantProfile, vastuRequired, vastuNotes, stylePreferences,
     materialPreferences, exclusions, passType, passNumber, passInstruction,
-    spatialAnalysis, colourPalette,
+    spatialAnalysis, colourPalette, floorPlanData,
   ])
 
   // Re-assemble whenever any input changes
