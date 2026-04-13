@@ -193,6 +193,32 @@ export function CheckpointPanel({
         onStyleLocked?.()
       }
 
+      // Sec 39: Notify team of CP approval (fire-and-forget)
+      const cpTitles: Record<number, string> = {
+        1: 'Shell approved',
+        2: 'Style seed approved',
+        3: 'Final design approved',
+      }
+      const cpMessages: Record<number, string> = {
+        1: `CP1 shell approved${roomName ? ` for ${roomName}` : ''} — styling passes now unlocked.`,
+        2: `CP2 style locked${roomName ? ` for ${roomName}` : ''} — full staging generation can begin.`,
+        3: `CP3 sign-off complete${roomName ? ` for ${roomName}` : ''} — project delivered.`,
+      }
+      const resolvedProjectId = projectId ?? await getProjectId()
+      if (resolvedProjectId) {
+        fetch('/api/notifications/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            project_id: resolvedProjectId,
+            room_id: roomId,
+            notification_type: 'cp_approved',
+            title: cpTitles[checkpointNumber] ?? `CP${checkpointNumber} approved`,
+            message: cpMessages[checkpointNumber] ?? `Checkpoint ${checkpointNumber} approved.`,
+          }),
+        }).catch(err => console.warn('[CheckpointPanel] notification failed:', err))
+      }
+
       setCp({ ...record, status: 'approved' })
       onStatusChange?.()
       router.refresh()

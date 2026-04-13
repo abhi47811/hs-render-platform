@@ -181,6 +181,33 @@ const triggerArtifactDetection = (renderId: string, renderUrl: string) => {
   }).catch(err => console.warn('[generate-staging] artifact detection trigger failed:', err))
 }
 
+/**
+ * Fire-and-forget: notify all team members that renders are ready for review.
+ */
+const notifyRenderReady = (
+  projectId: string,
+  roomId: string,
+  passNumber: number,
+  passType: string,
+  renderCount: number,
+) => {
+  const passLabel = passType.replace(/_/g, ' ')
+  fetch(`${SUPABASE_URL}/functions/v1/send-notification`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+    },
+    body: JSON.stringify({
+      project_id: projectId,
+      room_id: roomId,
+      notification_type: 'generation_complete',
+      title: `Pass ${passNumber} renders ready`,
+      message: `${renderCount} ${passLabel} render${renderCount !== 1 ? 's' : ''} generated — review and approve in staging.`,
+    }),
+  }).catch(err => console.warn('[generate-staging] notification trigger failed:', err))
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: CORS })
 
@@ -304,6 +331,11 @@ Deno.serve(async (req: Request) => {
         total_cost: totalCost,
       },
     })
+
+    // Sec 39: Notify team that renders are ready (fire-and-forget)
+    if (renderIds.length > 0) {
+      notifyRenderReady(project_id, room_id, pass_number, pass_type, renderIds.length)
+    }
 
     return new Response(
       JSON.stringify({ success: true, render_ids: renderIds, total_cost: totalCost, queue_id: queueId }),

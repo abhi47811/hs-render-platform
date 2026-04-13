@@ -2,6 +2,34 @@ import { createClient } from '@/lib/supabase/server'
 import { isShareLinkValid } from '@/lib/share'
 import { NextRequest, NextResponse } from 'next/server'
 
+const SUPABASE_FUNCTIONS_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+function notifyClientApproval(
+  projectId: string,
+  roomId: string,
+  checkpointNumber: number,
+) {
+  if (!SUPABASE_FUNCTIONS_URL || !SUPABASE_SERVICE_KEY) return
+  const cpLabel = checkpointNumber === 3 ? 'Final sign-off' : `CP${checkpointNumber}`
+  fetch(`${SUPABASE_FUNCTIONS_URL}/functions/v1/send-notification`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+    },
+    body: JSON.stringify({
+      project_id: projectId,
+      room_id: roomId,
+      notification_type: 'cp_approved',
+      title: `Client approved ${cpLabel}`,
+      message: checkpointNumber === 3
+        ? 'Client has signed off on the final design. Project is now delivered.'
+        : `Client approved checkpoint ${checkpointNumber} — staging can proceed to the next phase.`,
+    }),
+  }).catch(err => console.warn('[share/approve] notification failed:', err))
+}
+
 /**
  * POST /api/share/approve
  * Public endpoint (no auth required, validated by token)
@@ -97,6 +125,9 @@ export async function POST(request: NextRequest) {
         throw new Error(`Failed to update project status: ${projectError.message}`)
       }
     }
+
+    // Sec 39: Notify team that client approved (fire-and-forget)
+    notifyClientApproval(project_id, room_id, checkpoint_number)
 
     return NextResponse.json({ success: true }, { status: 200 })
   } catch (error) {
