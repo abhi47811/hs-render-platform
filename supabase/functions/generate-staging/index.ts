@@ -42,6 +42,8 @@ interface GenerateStagingRequest {
   resolution_tier: '1K' | '2K' | '4K'
   variation_count: number
   requested_by: string
+  // Sec 28/29: variant-specific metadata (lighting_variant, swap_zone, etc.)
+  metadata?: Record<string, unknown>
 }
 
 const COST_PER_IMAGE: Record<string, number> = {
@@ -224,6 +226,7 @@ Deno.serve(async (req: Request) => {
       room_id, project_id, pass_number, pass_type,
       prompt, reference_urls, reference_slots,
       resolution_tier, variation_count, requested_by,
+      metadata,
     } = body
 
     // Build references_used: prefer slot labels if provided, else raw URLs
@@ -280,6 +283,7 @@ Deno.serve(async (req: Request) => {
             references_used: referencesUsed,
             api_cost: costPerImage,
             artifact_flags: null,          // populated by detect-artifacts (fire-and-forget below)
+            metadata: metadata ?? null,    // Sec 28/29: lighting_variant, swap_zone, etc.
           })
           .select()
           .single()

@@ -1,58 +1,73 @@
-import { createClient } from '@/lib/supabase/server';
-import { NextRequest, NextResponse } from 'next/server';
-import { projectPriorityToQueue } from '@/lib/queue';
+import { createClient } from '@/lib/supabase/server'
+import { NextRequest, NextResponse } from 'next/server'
 
-interface GenerateRequest {
-  room_id: string;
-  project_id: string;
-  pass_number: number;
-  pass_type: string;
-  prompt: string;
-  reference_urls: string[];
-  resolution_tier: '1K' | '2K' | '4K';
-  variation_count: 1 | 2 | 3;
+const SUPABASE_FUNCTIONS_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+// Maps project priority label to queue numeric priority (higher = more urgent)
+function priorityToNumber(priority: string): number {
+  switch (priority?.toLowerCase()) {
+    case 'high':   return 3
+    case 'normal': return 2
+    case 'low':    return 1
+    default:       return 2
+  }
 }
 
+interface GenerateRequest {
+  room_id: string
+  project_id: string
+  pass_number: number
+  pass_type: string
+  prompt: string
+  reference_urls: string[]
+  reference_slots?: Array<{ slot: number; label: string; url: string }>
+  resolution_tier: '1K' | '2K' | '4K'
+  variation_count: 1 | 2 | 3
+  // Sec 28/29: metadata for day_to_dusk and material_swap variants
+  metadata?: Record<string, unknown>
+}
+
+/**
+ * POST /api/staging/generate
+ * Authenticated proxy to the generate-staging edge function.
+ * Sec 32: Queues requests if another generation is already processing.
+ * Sec 28/29: Passes metadata through for day_to_dusk and material_swap renders.
+ */
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const supabase = await createClient()
 
-    // Get current user
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await supabase.auth.getUser()
 
     if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const body = (await request.json()) as GenerateRequest;
+    if (!SUPABASE_FUNCTIONS_URL || !SUPABASE_SERVICE_KEY) {
+      return NextResponse.json(
+        { error: 'Server configuration error' },
+        { status: 500 }
+      )
+    }
+
+    const body = (await request.json()) as GenerateRequest
 
     const {
-      room_id,
-      project_id,
-      pass_number,
-      pass_type,
-      prompt,
-      reference_urls,
-      resolution_tier,
-      variation_count,
-    } = body;
+      room_id, project_id, pass_number, pass_type,
+      prompt, reference_urls, reference_slots,
+      resolution_tier, variation_count, metadata,
+    } = body
 
-    // Validate required fields
     if (!room_id || !project_id || !prompt) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
-    // Sec 32: Check if there is already a 'processing' job for this project.
-    // If so, queue this request instead of firing immediately.
+    // Sec 32: If another generation is already processing for this project,
+    // queue this request rather than firing immediately.
     const { data: activeJobs } = await supabase
       .from('generation_queue')
       .select('id')
@@ -63,7 +78,7 @@ export async function POST(request: NextRequest) {
     if (activeJobs && activeJobs.length > 0) {
       const { data: project } = await supabase
         .from('projects').select('priority').eq('id', project_id).single()
-      const priority = projectPriorityToQueue(project?.priority ?? 'Normal')
+      const priority = priorityToNumber(project?.priority ?? 'Normal')
 
       const { data: queueItem, error: queueError } = await supabase
         .from('generation_queue')
@@ -79,64 +94,48 @@ export async function POST(request: NextRequest) {
         .single()
 
       if (queueError) {
-        console.error('[Generate] queue insert error:', queueError)
+        console.error('[/api/staging/generate] queue insert error:', queueError)
       } else {
-        return NextResponse.json({ success: true, queue_id: queueItem.id })
+        return NextResponse.json({ success: true, queued: true, queue_id: queueItem.id })
       }
     }
 
-    // Call the Supabase Edge Function
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-    if (!supabaseUrl || !supabaseAnonKey) {
-      console.error('Missing Supabase configuration');
-      return NextResponse.json(
-        { error: 'Server configuration error' },
-        { status: 500 }
-      );
-    }
-
-    const edgeFunctionUrl = `${supabaseUrl}/functions/v1/generate-staging`;
-
-    const edgeFunctionResponse = await fetch(edgeFunctionUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${supabaseAnonKey}`,
-      },
-      body: JSON.stringify({
-        room_id,
-        project_id,
-        pass_number,
-        pass_type,
-        prompt,
-        reference_urls,
-        resolution_tier,
-        variation_count,
-        requested_by: user.id,
-      }),
-    });
-
-    const edgeResponse = await edgeFunctionResponse.json();
-
-    if (!edgeFunctionResponse.ok) {
-      console.error('Edge function error:', edgeResponse);
-      return NextResponse.json(
-        { error: edgeResponse.error || 'Generation failed' },
-        { status: edgeFunctionResponse.status }
-      );
-    }
-
-    return NextResponse.json(edgeResponse, { status: 200 });
-  } catch (error) {
-    console.error('API route error:', error);
-    return NextResponse.json(
+    // Call the generate-staging edge function with service role key
+    const res = await fetch(
+      `${SUPABASE_FUNCTIONS_URL}/functions/v1/generate-staging`,
       {
-        error:
-          error instanceof Error ? error.message : 'Internal server error',
-      },
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+        },
+        body: JSON.stringify({
+          room_id, project_id, pass_number, pass_type,
+          prompt, reference_urls, reference_slots,
+          resolution_tier: resolution_tier ?? '2K',
+          variation_count: variation_count ?? 1,
+          requested_by: user.id,
+          metadata,
+        }),
+      }
+    )
+
+    const data = await res.json()
+
+    if (!res.ok) {
+      console.error('[/api/staging/generate] edge function error:', data)
+      return NextResponse.json(
+        { error: data.error ?? 'Generation failed' },
+        { status: res.status }
+      )
+    }
+
+    return NextResponse.json(data, { status: 200 })
+  } catch (error) {
+    console.error('Error in POST /api/staging/generate:', error)
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Internal server error' },
       { status: 500 }
-    );
+    )
   }
 }
