@@ -116,6 +116,12 @@ export function GenerateButton({
     (r) => r.pass_number === passNumber && (r.status === 'generating' || r.status === 'pending')
   );
 
+  // E3: Generation mutex — synchronous ref-based lock that prevents double-trigger.
+  // React state (setIsLoading) is async; two rapid clicks can both pass the `isLoading`
+  // check before the first state update commits. The ref guard is synchronous and blocks
+  // re-entry at the top of handleGenerate before any await.
+  const isGeneratingRef = useRef(false);
+
   // Bug Fix 2: when queued, poll every 5s by calling onComplete so the parent
   // re-fetches renders; stop polling once renders appear or after 90s
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -152,6 +158,8 @@ export function GenerateButton({
   const checkpointBlock = getCheckpointBlockReason(passNumber, cp1Status, cp2Status);
 
   const handleGenerate = async () => {
+    // E3: Synchronous mutex — block re-entry if a generation is already in flight
+    if (isGeneratingRef.current) return;
     if (checkpointBlock) return;
 
     if (!prompt.trim()) {
@@ -159,6 +167,7 @@ export function GenerateButton({
       return;
     }
 
+    isGeneratingRef.current = true;
     setIsLoading(true);
     setError(null);
     setSuccess(false);
@@ -208,6 +217,7 @@ export function GenerateButton({
       setRetryCount(c => c + 1);
       console.error('Generation error:', err);
     } finally {
+      isGeneratingRef.current = false;
       setIsLoading(false);
     }
   };

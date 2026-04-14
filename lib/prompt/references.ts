@@ -48,36 +48,60 @@ export interface ReferenceAllocation {
 export function allocateReferenceSlots(input: ReferenceInput): ReferenceAllocation {
   const slots: ReferenceSlot[] = []
 
-  // ── Slot 1: Bare shell ───────────────────────────────────────
   const shellUrl =
     input.photorealistic_shell_url ||
     input.enhanced_shell_url ||
     input.original_shell_url
 
-  if (shellUrl) {
-    slots.push({
-      slot: 1,
-      label: 'Shell (Structure)',
-      url: shellUrl,
-      purpose: 'Establishes the room geometry, dimensions, and structural anchors for all placements.',
-    })
-  }
-
-  // ── Slot 2: Last approved render (continuity) ────────────────
+  // ── R1: For passes 2–6, inject the approved previous-pass render as Slot 1.
+  //        This makes Gemini BUILD ON the approved work rather than re-staging
+  //        from the empty shell every time. The shell moves to Slot 2 as a
+  //        structural reference anchor.
+  //        For pass 1 (Style Seed), the shell stays as Slot 1 (no prior render).
   if (input.pass_number > 1 && input.approved_renders?.length) {
-    // Find the most recent approved render from the immediately preceding pass
+    // Prefer the immediately preceding pass's approved render; fall back to highest pass
     const prevPassRenders = input.approved_renders
       .filter(r => r.pass_number === input.pass_number - 1)
-
     const continuityRender = prevPassRenders[0] ?? input.approved_renders[0]
     const continuityUrl = continuityRender?.watermarked_url || continuityRender?.storage_url
 
     if (continuityUrl) {
+      // Slot 1: Previous approved render → PRIMARY input for Gemini to build upon
       slots.push({
-        slot: 2,
-        label: 'Previous Pass (Continuity)',
+        slot: 1,
+        label: `Pass ${continuityRender.pass_number} Approved (Primary Input)`,
         url: continuityUrl,
-        purpose: `Pass ${continuityRender.pass_number} approved render — ensures styling continuity from the previous generation.`,
+        purpose: `Pass ${continuityRender.pass_number} approved render — PRIMARY input image. Build directly on this. Preserve all existing elements and add the new pass elements on top.`,
+      })
+
+      // Slot 2: Shell → structural/geometry anchor
+      if (shellUrl) {
+        slots.push({
+          slot: 2,
+          label: 'Shell (Structural Anchor)',
+          url: shellUrl,
+          purpose: 'Reference for room geometry, wall positions, window/door locations, and perspective. Structural anchors must remain consistent.',
+        })
+      }
+    } else {
+      // No previous approved render available — fall back to shell as Slot 1
+      if (shellUrl) {
+        slots.push({
+          slot: 1,
+          label: 'Shell (Structure)',
+          url: shellUrl,
+          purpose: 'Establishes the room geometry, dimensions, and structural anchors for all placements.',
+        })
+      }
+    }
+  } else {
+    // Pass 1 (Style Seed): shell is Slot 1
+    if (shellUrl) {
+      slots.push({
+        slot: 1,
+        label: 'Shell (Structure)',
+        url: shellUrl,
+        purpose: 'Establishes the room geometry, dimensions, and structural anchors for all placements.',
       })
     }
   }
@@ -117,8 +141,10 @@ export function allocateReferenceSlots(input: ReferenceInput): ReferenceAllocati
   const urls = slots.map(s => s.url)
 
   const slotParts: string[] = [`${slots.length}/14 reference slots used:`]
-  if (slots.find(s => s.slot === 1)) slotParts.push('Slot 1: Shell')
-  if (slots.find(s => s.slot === 2)) slotParts.push('Slot 2: Continuity')
+  const s1 = slots.find(s => s.slot === 1)
+  const s2 = slots.find(s => s.slot === 2)
+  if (s1) slotParts.push(`Slot 1: ${s1.label}`)
+  if (s2) slotParts.push(`Slot 2: ${s2.label}`)
   if (slots.find(s => s.slot === 3)) slotParts.push('Slot 3: Style seed')
   if (moodboardUrls.length > 0) slotParts.push(`Slots 4–${3 + moodboardUrls.length}: Moodboard (${moodboardUrls.length})`)
   if (furnitureUrls.length > 0) slotParts.push(`Slots ${9}–${8 + furnitureUrls.length}: Furniture refs (${furnitureUrls.length})`)

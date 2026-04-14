@@ -233,15 +233,23 @@ Room type: ${input.room_type} — ${input.room_name}.`
   return block
 }
 
-function buildBlock4_GeometryContinuity(): string {
+function buildBlock4_GeometryContinuity(passNumber: number): string {
+  // R1: For passes 2+, Slot 1 is the previous approved render (primary input).
+  //     Slot 2 is the original shell (structural anchor).
+  //     For pass 1, Slot 1 is the shell — no prior render exists.
+  const primaryDesc = passNumber > 1
+    ? `Slot 1 (first reference image) is the APPROVED RENDER from the previous pass — this is your PRIMARY input. Build directly on it; preserve every element already staged there and add only the new elements for this pass. Slot 2 is the original empty shell — use it solely to verify wall positions, door/window locations, and perspective.`
+    : `Slot 1 is the empty shell — this is your PRIMARY input. Establish the structural baseline before adding any styling.`
+
   return `GEOMETRY AND STRUCTURAL CONTINUITY (CRITICAL):
-Preserve all structural elements exactly as they appear in the reference image:
+${primaryDesc}
+Preserve all structural elements exactly:
 - All walls, their angles, positions, and surface textures must remain identical
 - Ceiling height, ceiling features, and any cornicing must be unchanged
 - All doors and window openings: their sizes, positions, frames, and reveals unchanged
 - Floor plane: its level, material if already established, and area unchanged
 - Any existing built-in elements (wardrobes, kitchen units, bathroom fixtures) unchanged
-- Camera perspective, focal length, and composition angle must be identical to reference
+- Camera perspective, focal length, and composition angle must be identical to the primary input
 The room structure is LOCKED. Only add or modify furnishings and styling elements.`
 }
 
@@ -313,6 +321,24 @@ Temperature: ${palette.dominant_temperature || 'warm'}. Saturation: ${palette.sa
 Do not introduce new dominant colours not present in this palette.`
 }
 
+// ─── R2: Block 10 — Negative Prompt ──────────────────────────────────────────
+
+function buildBlock10_NegativePrompt(): string {
+  return `NEGATIVE CONSTRAINTS — STRICTLY AVOID:
+- No floating furniture or objects not in full contact with the floor or a surface
+- No impossible, contradictory, or mismatched shadows (all shadows must obey a single consistent light source)
+- No duplicate furniture pieces — each item appears exactly once
+- No CGI artifacts: no plastic-looking surfaces, no over-smooth textures, no visible polygon edges
+- No distorted, warped, or stretched geometry on walls, floors, or furniture
+- No text, watermarks, logos, brand names, or labels visible anywhere in the image
+- No oversaturated or unnatural colours — all colours must be plausible for real interior materials
+- No visible texture seams or tiling patterns on floors, walls, or upholstery
+- No furniture that is incorrectly scaled to the room (chairs must look chair-sized, sofas sofa-sized)
+- No objects partially clipping through walls, floors, or other furniture
+- No missing floor contact — every leg, base, or lower edge must meet the floor plane correctly
+- No blown-out highlights or pitch-black shadow zones that obscure room detail`
+}
+
 // ─── Pass Default Instructions ────────────────────────────────────────────────
 
 export const PASS_DEFAULT_INSTRUCTIONS: Record<string, string> = {
@@ -368,7 +394,7 @@ export function assemblePrompt(
   })
 
   // Block 4: Geometry Continuity
-  const b4 = buildBlock4_GeometryContinuity()
+  const b4 = buildBlock4_GeometryContinuity(input.pass_number)
   blocks.push({
     block_number: 4,
     label: 'Geometry Continuity',
@@ -429,6 +455,16 @@ export function assemblePrompt(
     content: b9 ?? '',
     is_editable: false,
     is_active: b9 !== null,
+  })
+
+  // Block 10: Negative Prompt (R2 — always active)
+  const b10 = buildBlock10_NegativePrompt()
+  blocks.push({
+    block_number: 10,
+    label: 'Negative Constraints',
+    content: b10,
+    is_editable: false,
+    is_active: true,
   })
 
   // Inject colour constraint after Block 3 if palette exists

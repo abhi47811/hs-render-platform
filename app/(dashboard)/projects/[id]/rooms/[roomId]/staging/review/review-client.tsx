@@ -96,6 +96,7 @@ export function ReviewClient({ projectId, roomId, allRenders }: ReviewClientProp
             renders={approvedRenders}
             onApprove={undefined}
             onReject={undefined}
+            shellUrl={(room as any).original_shell_url ?? null}
             onDoubleClick={(renderId) => {
               const idx = lightboxRenders.findIndex(r => r.id === renderId);
               if (idx >= 0) setLightboxIndex(idx);

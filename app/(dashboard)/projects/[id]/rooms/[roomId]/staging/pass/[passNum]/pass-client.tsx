@@ -485,6 +485,7 @@ export function PassClient({ projectId, roomId, passNum, initialRenders }: PassC
             renders={renders}
             onApprove={handleApprove}
             onReject={handleReject}
+            shellUrl={enhancedShellUrl ?? (room as any).original_shell_url ?? null}
             onDoubleClick={(renderId) => {
               const idx = lightboxRenders.findIndex(r => r.id === renderId);
               if (idx >= 0) setLightboxIndex(idx);

@@ -1,3 +1,14 @@
+// @deprecated — RETIRED April 2026
+// This monolithic client has been split into the multi-step flow:
+//   setup/setup-client.tsx       → Room Setup (Step 0)
+//   pass/[passNum]/pass-client.tsx → Pass pages (Steps 1–6)
+//   review/review-client.tsx     → Review & Sign-off (Step 7)
+//   deliver/deliver-client.tsx   → Delivery Tools (Step 8)
+//   layout-client.tsx            → Shared layout + StagingContext
+//
+// DO NOT add new features here. Delete this file once multi-step flow
+// is confirmed stable in production.
+
 'use client';
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
