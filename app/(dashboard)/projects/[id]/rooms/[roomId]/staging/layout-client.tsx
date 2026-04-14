@@ -26,7 +26,7 @@ function StagingLayoutInner({
   projectStyleSeedUrl: string | null;
   projectStyleSeedRoom: string | null;
 }) {
-  const { room, project, localCurrentPass, cpStatuses } = useStagingContext();
+  const { room, project, localCurrentPass, cpStatuses, costRefreshKey } = useStagingContext();
 
   return (
     <div className="min-h-screen bg-stone-50">
@@ -53,7 +53,7 @@ function StagingLayoutInner({
             <ProjectCostBadge
               projectId={room.project_id}
               warnAt={500}
-              refreshKey={0}
+              refreshKey={costRefreshKey}
             />
           </div>
         </div>
@@ -69,7 +69,7 @@ function StagingLayoutInner({
 
       {/* ── Cost alert (shown when threshold exceeded) ── */}
       <div className="px-4 pt-2">
-        <CostAlertBanner roomId={room.id} threshold={150} refreshKey={0} />
+        <CostAlertBanner roomId={room.id} threshold={150} refreshKey={costRefreshKey} />
       </div>
 
       {/* ── Page content ── */}

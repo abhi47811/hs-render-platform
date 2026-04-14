@@ -21,6 +21,7 @@ import { PromptPreviewModal } from '@/components/staging/PromptPreviewModal';
 import { AutoSaveIndicator } from '@/lib/AutoSaveIndicator';
 import { PromptVersionHistory } from '@/components/staging/PromptVersionHistory';
 import { useAutoSavePrompt } from '@/lib/useAutoSavePrompt';
+import { MoodboardPicker } from '@/components/staging/MoodboardPicker';
 import type { Revision } from '@/types/database';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -84,6 +85,7 @@ export function PassClient({ projectId, roomId, passNum, initialRenders }: PassC
     styleLocked,
     localSeedUrl, setLocalSeedUrl,
     projectStatus, setProjectStatus,
+    bumpCostRefreshKey,
   } = useStagingContext();
 
   // ── Local state ────────────────────────────────────────────────────────────
@@ -92,7 +94,7 @@ export function PassClient({ projectId, roomId, passNum, initialRenders }: PassC
   const [variationCount, setVariationCount] = useState<1 | 2 | 3>(1);
   const [renders, setRenders] = useState<Render[]>(initialRenders);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [costRefreshKey, setCostRefreshKey] = useState(0);
+  const [moodboardUrls, setMoodboardUrls] = useState<string[]>([]);
   const [furnitureRefUrls, setFurnitureRefUrls] = useState<string[]>([]);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [showPromptPreview, setShowPromptPreview] = useState(false);
@@ -165,11 +167,11 @@ export function PassClient({ projectId, roomId, passNum, initialRenders }: PassC
       original_shell_url: room.original_shell_url,
       approved_renders: approvedRenders,
       style_seed_url: localSeedUrl ?? approvedSeedRender?.storage_url ?? null,
-      moodboard_urls: [],
+      moodboard_urls: moodboardUrls,
       furniture_ref_urls: furnitureRefUrls,
       pass_number: passNum,
     }),
-    [room, approvedRenders, localSeedUrl, approvedSeedRender, passNum, furnitureRefUrls]
+    [room, approvedRenders, localSeedUrl, approvedSeedRender, passNum, furnitureRefUrls, moodboardUrls]
   );
 
   // ── Cross-room banner ──────────────────────────────────────────────────────
@@ -244,15 +246,24 @@ export function PassClient({ projectId, roomId, passNum, initialRenders }: PassC
       console.error('Refresh error:', err);
     } finally {
       setIsRefreshing(false);
-      setCostRefreshKey(k => k + 1);
+      bumpCostRefreshKey();
     }
   };
 
   const handleSeedApproved = (render: Render) => {
-    setLocalSeedUrl(render.storage_url);
+    const seedUrl = render.storage_url;
+    setLocalSeedUrl(seedUrl);
     setRenders(prev =>
       prev.map(r => r.id === render.id ? { ...r, status: 'approved' } : r)
     );
+    // Auto-extract colour palette from approved seed — fire-and-forget, non-blocking
+    if (seedUrl) {
+      fetch('/api/style/extract-palette', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ room_id: roomId, project_id: projectId, style_seed_url: seedUrl }),
+      }).catch(err => console.warn('[palette] extraction failed silently:', err));
+    }
   };
 
   const handleInheritSeed = (url: string) => {
@@ -321,6 +332,17 @@ export function PassClient({ projectId, roomId, passNum, initialRenders }: PassC
             selectedPass={passNum}
             onSelectPass={handleSelectPass}
           />
+
+          {/* Moodboard — style vault selections, fills Gemini slots 4–8 */}
+          <div className="px-0.5">
+            <MoodboardPicker
+              roomType={room.room_type}
+              primaryStyle={project.primary_style ?? ''}
+              selectedUrls={moodboardUrls}
+              maxSelections={5}
+              onChange={setMoodboardUrls}
+            />
+          </div>
 
           {/* Pass 1: Style Seed Panel */}
           {(passNum === 1 || !approvedSeedRender) && (

@@ -43,6 +43,10 @@ export interface StagingContextValue {
   cpStatuses: { cp1: CPStatus; cp2: CPStatus; cp3: CPStatus };
   checkpoints: CheckpointRecord[];
 
+  // ── Cost refresh key (incremented after each generation to re-poll badges) ──
+  costRefreshKey: number;
+  bumpCostRefreshKey: () => void;
+
   // ── Room + project (read-only, from server) ──────────────────────────────
   room: Room & { projects: any };
   project: any;
@@ -87,6 +91,8 @@ export function StagingProvider({ children, room, project, checkpoints }: Stagin
   const [projectStatus, setProjectStatus] = useState<string>(
     project?.status ?? 'staging'
   );
+  const [costRefreshKey, setCostRefreshKey] = useState<number>(0);
+  const bumpCostRefreshKey = useCallback(() => setCostRefreshKey(k => k + 1), []);
 
   const cpStatuses = useMemo(() => {
     const getCP = (num: number) => checkpoints.find(c => c.checkpoint_number === num) ?? null;
@@ -112,6 +118,8 @@ export function StagingProvider({ children, room, project, checkpoints }: Stagin
     setLocalSeedUrl,
     projectStatus,
     setProjectStatus,
+    costRefreshKey,
+    bumpCostRefreshKey,
     cpStatuses,
     checkpoints,
     room,
