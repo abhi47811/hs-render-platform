@@ -48,6 +48,16 @@ interface PromptBuilderProps {
 
   // Output callback
   onPromptChange: (prompt: string) => void
+
+  // ── Tab-split support ────────────────────────────────────────────────────
+  // 'instruction' → renders only the Pass Instruction block (textarea + pickers)
+  // 'blocks'      → renders only header, block pills, context, locked-blocks, full prompt
+  // 'all'         → renders everything (default, backward-compat)
+  section?: 'all' | 'instruction' | 'blocks'
+
+  // Controlled instruction value — when provided, overrides internal state
+  instructionValue?: string
+  onInstructionChange?: (val: string) => void
 }
 
 interface PromptTemplate {
@@ -162,6 +172,9 @@ export function PromptBuilder({
   furnitureRefUrls: furnitureRefUrlsProp = [],
   onFurnitureRefsChange,
   onPromptChange,
+  section,
+  instructionValue,
+  onInstructionChange,
 }: PromptBuilderProps) {
   // Sec 36: local furniture ref state (controlled by prop if provided)
   const [selectedFurnitureRefs, setSelectedFurnitureRefs] = useState<string[]>(furnitureRefUrlsProp)
@@ -172,6 +185,12 @@ export function PromptBuilder({
   const supabase = createClient()
   const defaultInstruction = getDefaultPassInstruction(passType)
   const [passInstruction, setPassInstruction] = useState(defaultInstruction)
+
+  // ── Tab-split: controlled instruction + section visibility ──────────────
+  const effectiveInstruction = instructionValue !== undefined ? instructionValue : passInstruction
+  const showInstruction = !section || section === 'all' || section === 'instruction'
+  const showBlocks = !section || section === 'all' || section === 'blocks'
+
   const [assembled, setAssembled] = useState<AssembledPrompt | null>(null)
   const [showPreview, setShowPreview] = useState(false)
 
@@ -234,6 +253,7 @@ export function PromptBuilder({
 
   const handleSelectTemplate = async (template: PromptTemplate) => {
     setPassInstruction(template.instruction)
+    onInstructionChange?.(template.instruction)
     setShowTemplates(false)
 
     // Increment usage_count (fire-and-forget)
@@ -290,7 +310,9 @@ export function PromptBuilder({
   const handleSelectVaultEntry = (entry: VaultEntry) => {
     // Append style reference to the current instruction
     const refLine = `\n\nVault Reference: "${entry.style_name}" — ${entry.image_url}`
-    setPassInstruction(prev => prev.trimEnd() + refLine)
+    const newVal = effectiveInstruction.trimEnd() + refLine
+    setPassInstruction(newVal)
+    onInstructionChange?.(newVal)
     setShowVault(false)
     // Increment usage_count (fire-and-forget)
     supabase
@@ -322,14 +344,14 @@ export function PromptBuilder({
     exclusions,
     pass_type: passType as PassType,
     pass_number: passNumber,
-    pass_instruction: passInstruction,
+    pass_instruction: effectiveInstruction,
     spatial_analysis: spatialAnalysis as any,
     colour_palette: colourPalette as any,
     floor_plan_data: (floorPlanData as FloorPlanData) ?? null,
   }), [
     roomType, roomName, primaryStyle, budgetBracket, city,
     occupantProfile, vastuRequired, vastuNotes, stylePreferences,
-    materialPreferences, exclusions, passType, passNumber, passInstruction,
+    materialPreferences, exclusions, passType, passNumber, effectiveInstruction,
     spatialAnalysis, colourPalette, floorPlanData,
   ])
 
@@ -343,16 +365,20 @@ export function PromptBuilder({
 
   // Reset pass instruction when pass changes
   useEffect(() => {
-    setPassInstruction(getDefaultPassInstruction(passType))
+    const newDefault = getDefaultPassInstruction(passType)
+    setPassInstruction(newDefault)
+    onInstructionChange?.(newDefault)
     setShowTemplates(false)
-  }, [passType])
+  }, [passType]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleInstructionChange = (val: string) => {
     setPassInstruction(val)
+    onInstructionChange?.(val)
   }
 
   const handleReset = () => {
     setPassInstruction(defaultInstruction)
+    onInstructionChange?.(defaultInstruction)
   }
 
   if (!assembled) return null
@@ -362,63 +388,70 @@ export function PromptBuilder({
 
   return (
     <div className="space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h3 className="text-xs font-semibold text-stone-500 uppercase tracking-wider">Generation Prompt</h3>
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-stone-400 tabular-nums">{assembled.char_count.toLocaleString()} chars</span>
-          <button
-            onClick={() => setShowPreview(true)}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-stone-200 text-xs font-medium text-stone-600 hover:bg-stone-50 transition-colors cursor-pointer"
-          >
-            <EyeIcon />
-            Preview blocks
-          </button>
-        </div>
-      </div>
-
-      {/* Block indicator strip */}
-      <div className="flex items-center gap-1.5 flex-wrap">
-        {activeBlocks.map((block) => (
-          <div
-            key={block.block_number}
-            className="flex items-center gap-1 bg-white border border-stone-100 rounded-full px-2 py-0.5"
-            title={`Block ${block.block_number}: ${block.label}${block.is_editable ? ' (Editable)' : ' (Auto)'}`}
-          >
-            <div className={`w-1.5 h-1.5 rounded-full ${BLOCK_DOT_COLOURS[block.block_number] ?? 'bg-stone-400'}`} />
-            <span className="text-[9px] font-medium text-stone-500 leading-none">
-              B{block.block_number}
-            </span>
-            {block.is_editable && (
-              <span className="text-[8px] text-stone-900 font-bold leading-none">✎</span>
-            )}
+      {/* ── BLOCKS section: header, pills, context bar ── */}
+      {showBlocks && (
+        <>
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-semibold text-stone-500 uppercase tracking-wider">Generation Prompt</h3>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-stone-400 tabular-nums">{assembled.char_count.toLocaleString()} chars</span>
+              <button
+                onClick={() => setShowPreview(true)}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-stone-200 text-xs font-medium text-stone-600 hover:bg-stone-50 transition-colors cursor-pointer"
+              >
+                <EyeIcon />
+                Preview blocks
+              </button>
+            </div>
           </div>
-        ))}
-      </div>
 
-      {/* Context bar */}
-      <div className="bg-stone-50 border border-stone-100 rounded-xl p-3">
-        <p className="text-xs text-stone-600 leading-relaxed">
-          <span className="font-semibold text-stone-700">{roomType}</span>
-          <span className="text-stone-300 mx-1">·</span>
-          <span className="font-semibold text-stone-700">{primaryStyle}</span>
-          <span className="text-stone-300 mx-1">·</span>
-          <span className="text-stone-500">{budgetBracket}</span>
-          <span className="text-stone-300 mx-1">·</span>
-          <span className="text-stone-500">{city}</span>
-          {vastuRequired !== 'No' && (
-            <><span className="text-stone-300 mx-1">·</span><span className="text-orange-600 font-medium">Vastu {vastuRequired}</span></>
-          )}
-          {spatialAnalysis && (
-            <><span className="text-stone-300 mx-1">·</span><span className="text-emerald-600 font-medium">Spatial locked</span></>
-          )}
-          {colourPalette && passNumber > 1 && (
-            <><span className="text-stone-300 mx-1">·</span><span className="text-emerald-600 font-medium">Palette locked</span></>
-          )}
-        </p>
-      </div>
+          {/* Block indicator strip */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {activeBlocks.map((block) => (
+              <div
+                key={block.block_number}
+                className="flex items-center gap-1 bg-white border border-stone-100 rounded-full px-2 py-0.5"
+                title={`Block ${block.block_number}: ${block.label}${block.is_editable ? ' (Editable)' : ' (Auto)'}`}
+              >
+                <div className={`w-1.5 h-1.5 rounded-full ${BLOCK_DOT_COLOURS[block.block_number] ?? 'bg-stone-400'}`} />
+                <span className="text-[9px] font-medium text-stone-500 leading-none">
+                  B{block.block_number}
+                </span>
+                {block.is_editable && (
+                  <span className="text-[8px] text-stone-900 font-bold leading-none">✎</span>
+                )}
+              </div>
+            ))}
+          </div>
 
-      {/* Block 2: Pass Instruction — ONLY EDITABLE BLOCK */}
+          {/* Context bar */}
+          <div className="bg-stone-50 border border-stone-100 rounded-xl p-3">
+            <p className="text-xs text-stone-600 leading-relaxed">
+              <span className="font-semibold text-stone-700">{roomType}</span>
+              <span className="text-stone-300 mx-1">·</span>
+              <span className="font-semibold text-stone-700">{primaryStyle}</span>
+              <span className="text-stone-300 mx-1">·</span>
+              <span className="text-stone-500">{budgetBracket}</span>
+              <span className="text-stone-300 mx-1">·</span>
+              <span className="text-stone-500">{city}</span>
+              {vastuRequired !== 'No' && (
+                <><span className="text-stone-300 mx-1">·</span><span className="text-orange-600 font-medium">Vastu {vastuRequired}</span></>
+              )}
+              {spatialAnalysis && (
+                <><span className="text-stone-300 mx-1">·</span><span className="text-emerald-600 font-medium">Spatial locked</span></>
+              )}
+              {colourPalette && passNumber > 1 && (
+                <><span className="text-stone-300 mx-1">·</span><span className="text-emerald-600 font-medium">Palette locked</span></>
+              )}
+            </p>
+          </div>
+        </>
+      )}
+
+      {/* ── INSTRUCTION section: Block 2 (Pass Instruction) ── */}
+      {showInstruction && (
+      <>{/* Block 2: Pass Instruction — ONLY EDITABLE BLOCK */}
       <div className="space-y-1.5">
         <div className="flex items-center justify-between">
           <label className="text-xs font-semibold text-stone-700 flex items-center gap-1.5">
@@ -592,7 +625,7 @@ export function PromptBuilder({
           </div>
         </div>
         <textarea
-          value={passInstruction}
+          value={effectiveInstruction}
           onChange={(e) => handleInstructionChange(e.target.value)}
           rows={4}
           className="w-full px-3 py-2.5 rounded-xl border border-stone-900 bg-white text-stone-800 text-sm placeholder-stone-300 focus:outline-none focus:ring-2 focus:ring-stone-900 resize-none leading-relaxed"
@@ -602,39 +635,46 @@ export function PromptBuilder({
           This is the only editable block. All other blocks are auto-assembled and locked.
         </p>
       </div>
-
-      {/* Locked blocks summary */}
-      {hasLockedBlocks && (
-        <div className="bg-stone-50 border border-stone-100 rounded-xl p-3 space-y-1.5">
-          <div className="flex items-center gap-1.5 text-[10px] font-semibold text-stone-400 uppercase tracking-wider">
-            <LockIcon />
-            Auto-assembled blocks
-          </div>
-          <div className="grid grid-cols-2 gap-1">
-            {activeBlocks.filter(b => !b.is_editable).map(block => (
-              <div key={block.block_number} className="flex items-center gap-1.5">
-                <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${BLOCK_DOT_COLOURS[block.block_number] ?? 'bg-stone-300'}`} />
-                <span className="text-[10px] text-stone-500">{block.label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
+      </> /* end showInstruction */
       )}
 
-      {/* Full prompt preview (collapsed) */}
-      <details className="group">
-        <summary className="text-xs text-stone-400 hover:text-stone-600 cursor-pointer select-none flex items-center gap-1.5 py-0.5">
-          <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="transition-transform group-open:rotate-90">
-            <path d="M9 18l6-6-6-6"/>
-          </svg>
-          Full assembled prompt
-        </summary>
-        <div className="mt-2 p-3 bg-white border border-stone-200 rounded-xl text-[10px] text-stone-500 font-mono whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto">
-          {assembled.final_prompt}
-        </div>
-      </details>
+      {/* ── BLOCKS section: locked blocks + full prompt ── */}
+      {showBlocks && (
+        <>
+          {/* Locked blocks summary */}
+          {hasLockedBlocks && (
+            <div className="bg-stone-50 border border-stone-100 rounded-xl p-3 space-y-1.5">
+              <div className="flex items-center gap-1.5 text-[10px] font-semibold text-stone-400 uppercase tracking-wider">
+                <LockIcon />
+                Auto-assembled blocks
+              </div>
+              <div className="grid grid-cols-2 gap-1">
+                {activeBlocks.filter(b => !b.is_editable).map(block => (
+                  <div key={block.block_number} className="flex items-center gap-1.5">
+                    <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${BLOCK_DOT_COLOURS[block.block_number] ?? 'bg-stone-300'}`} />
+                    <span className="text-[10px] text-stone-500">{block.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
-      {/* Block preview modal */}
+          {/* Full prompt preview (collapsed) */}
+          <details className="group">
+            <summary className="text-xs text-stone-400 hover:text-stone-600 cursor-pointer select-none flex items-center gap-1.5 py-0.5">
+              <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="transition-transform group-open:rotate-90">
+                <path d="M9 18l6-6-6-6"/>
+              </svg>
+              Full assembled prompt
+            </summary>
+            <div className="mt-2 p-3 bg-white border border-stone-200 rounded-xl text-[10px] text-stone-500 font-mono whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto">
+              {assembled.final_prompt}
+            </div>
+          </details>
+        </>
+      )}
+
+      {/* Block preview modal — always available */}
       {showPreview && assembled && (
         <PromptBlockPreview
           assembledPrompt={assembled}

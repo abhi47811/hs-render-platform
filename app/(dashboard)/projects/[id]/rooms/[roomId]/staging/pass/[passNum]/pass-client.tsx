@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { getDefaultPassInstruction } from '@/lib/prompt/assembler';
 import type { Render } from '@/types/database';
 import { createClient } from '@/lib/supabase/client';
 import { useStagingContext } from '@/lib/staging-context';
@@ -98,6 +99,17 @@ export function PassClient({ projectId, roomId, passNum, initialRenders }: PassC
   const [furnitureRefUrls, setFurnitureRefUrls] = useState<string[]>([]);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [showPromptPreview, setShowPromptPreview] = useState(false);
+
+  // ── 3-tab left panel state ─────────────────────────────────────────────────
+  const [activeLeftTab, setActiveLeftTab] = useState<'configure' | 'prompt' | 'settings'>('configure');
+  const [passInstruction, setPassInstruction] = useState(() =>
+    getDefaultPassInstruction(getPassType(passNum))
+  );
+
+  // Reset instruction when navigating to a different pass
+  useEffect(() => {
+    setPassInstruction(getDefaultPassInstruction(getPassType(passNum)));
+  }, [passNum]);
 
   // ── Auto-save prompt drafts ────────────────────────────────────────────────
   const { saveState, loadedDraft, isLoadingDraft } = useAutoSavePrompt(
@@ -326,142 +338,223 @@ export function PassClient({ projectId, roomId, passNum, initialRenders }: PassC
         {/* ── Left: Controls ── */}
         <div className="lg:col-span-1 space-y-3 lg:sticky lg:top-[96px] lg:max-h-[calc(100vh-110px)] lg:overflow-y-auto lg:pr-1" style={{ scrollbarWidth: 'thin' }}>
 
-          {/* Pass Selector */}
+          {/* Pass Selector — always visible */}
           <PassSelector
             currentPass={localCurrentPass}
             selectedPass={passNum}
             onSelectPass={handleSelectPass}
           />
 
-          {/* Moodboard — style vault selections, fills Gemini slots 4–8 */}
-          <div className="px-0.5">
-            <MoodboardPicker
-              roomType={room.room_type}
-              primaryStyle={project.primary_style ?? ''}
-              selectedUrls={moodboardUrls}
-              maxSelections={5}
-              onChange={setMoodboardUrls}
-            />
-          </div>
-
-          {/* Pass 1: Style Seed Panel */}
-          {(passNum === 1 || !approvedSeedRender) && (
-            <StyleSeedPanel
-              roomId={roomId}
-              currentPassNumber={passNum}
-              seedRender={approvedSeedRender}
-              pendingSeedRenders={pendingSeedRenders as any}
-              styleLocked={styleLocked}
-              onSeedApproved={handleSeedApproved as any}
-            />
-          )}
-
-          {/* Pass 1: Style Seed Evolution (when multiple seeds exist) */}
-          {passNum === 1 && renders.filter(r => r.pass_number === 1).length > 1 && (
-            <StyleSeedEvolution renders={renders} />
-          )}
-
-          {/* Prompt Builder */}
-          <PromptBuilder
-            roomType={room.room_type}
-            roomName={room.room_name}
-            primaryStyle={project.primary_style}
-            budgetBracket={project.budget_bracket}
-            city={project.city ?? 'Bangalore'}
-            occupantProfile={project.occupant_profile ?? 'Young Couple'}
-            vastuRequired={project.vastu_required ?? 'No'}
-            vastuNotes={project.vastu_notes ?? null}
-            stylePreferences={project.style_preferences ?? null}
-            materialPreferences={project.material_preferences ?? null}
-            exclusions={project.exclusions ?? null}
-            passType={getPassType(passNum)}
-            passNumber={passNum}
-            spatialAnalysis={spatialAnalysisData}
-            floorPlanData={floorPlanData}
-            colourPalette={room.colour_palette ?? null}
-            moodboardCount={referenceAllocation.moodboard_count}
-            furnitureRefCount={referenceAllocation.furniture_ref_count}
-            furnitureRefUrls={furnitureRefUrls}
-            onFurnitureRefsChange={setFurnitureRefUrls}
-            onPromptChange={setPrompt}
-          />
-
-          {/* Generation Settings */}
-          <div className="flex items-center gap-2 p-2.5 bg-stone-50 rounded-xl border border-stone-200">
-            <div className="relative flex-1">
-              <select
-                value={resolutionTier}
-                onChange={(e) => setResolutionTier(e.target.value as '1K' | '2K' | '4K')}
-                className="w-full appearance-none pl-2.5 pr-6 py-1.5 rounded-lg border border-stone-200 bg-white text-stone-700 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-stone-900 cursor-pointer"
-              >
-                <option value="1K">1K · ₹2.50</option>
-                <option value="2K">2K · ₹6.00</option>
-                <option value="4K">4K · ₹15.00</option>
-              </select>
-              <svg className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-stone-400" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M6 9l6 6 6-6" />
-              </svg>
-            </div>
-            <div className="h-5 w-px bg-stone-200 flex-shrink-0" />
-            <div className="flex items-center gap-1 flex-shrink-0">
-              <span className="text-[10px] text-stone-400 font-medium mr-0.5">Var</span>
-              {[1, 2, 3].map((count) => (
-                <button
-                  key={count}
-                  onClick={() => setVariationCount(count as 1 | 2 | 3)}
-                  className={`w-7 h-7 rounded-lg text-xs font-semibold transition-colors ${
-                    variationCount === count
-                      ? 'bg-stone-900 text-white'
-                      : 'bg-white border border-stone-200 text-stone-600 hover:bg-stone-100'
-                  }`}
-                >
-                  {count}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Reference Slot Summary */}
-          {referenceAllocation.slots.length > 0 && (
-            <div className="flex items-center gap-2 px-2.5 py-1.5 bg-stone-50 rounded-lg border border-stone-200">
-              <SlotIcon />
-              <span className="text-[10px] text-stone-400 font-medium flex-shrink-0">
-                Refs {referenceAllocation.slots.length}/14
-              </span>
-              <div className="flex items-center gap-1 flex-wrap">
-                {referenceAllocation.slots.map(slot => (
-                  <span key={slot.slot} className="text-[10px] text-stone-500 bg-white border border-stone-200 rounded px-1.5 py-0.5">
-                    S{slot.slot}: {slot.label}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Preview + autosave row */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+          {/* ── 3-Tab Bar ── */}
+          <div className="flex gap-1 bg-stone-100 rounded-xl p-1">
+            {(['configure', 'prompt', 'settings'] as const).map(tab => (
               <button
-                onClick={() => setShowPromptPreview(true)}
-                disabled={!prompt.trim()}
-                className="flex items-center gap-1.5 text-xs text-stone-500 hover:text-stone-800 transition-colors disabled:opacity-40"
+                key={tab}
+                onClick={() => setActiveLeftTab(tab)}
+                className={`flex-1 py-1.5 rounded-lg text-[11px] font-semibold transition-colors ${
+                  activeLeftTab === tab
+                    ? 'bg-stone-900 text-white shadow-sm'
+                    : 'text-stone-500 hover:text-stone-700 hover:bg-stone-50'
+                }`}
               >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                  <circle cx="12" cy="12" r="3"/>
-                </svg>
-                Preview prompt
+                {tab === 'configure' ? 'Configure' : tab === 'prompt' ? 'Prompt' : 'Settings'}
               </button>
+            ))}
+          </div>
+
+          {/* ══════════════════════════════════════════════════════════
+              TAB 1 — CONFIGURE
+              Moodboard · Style Seed · Pass Instruction (Block 2)
+          ══════════════════════════════════════════════════════════ */}
+          {activeLeftTab === 'configure' && (
+            <div className="space-y-3">
+              {/* Moodboard — style vault selections, fills Gemini slots 4–8 */}
+              <div className="px-0.5">
+                <MoodboardPicker
+                  roomType={room.room_type}
+                  primaryStyle={project.primary_style ?? ''}
+                  selectedUrls={moodboardUrls}
+                  maxSelections={5}
+                  onChange={setMoodboardUrls}
+                />
+              </div>
+
+              {/* Pass 1: Style Seed Panel */}
+              {(passNum === 1 || !approvedSeedRender) && (
+                <StyleSeedPanel
+                  roomId={roomId}
+                  currentPassNumber={passNum}
+                  seedRender={approvedSeedRender}
+                  pendingSeedRenders={pendingSeedRenders as any}
+                  styleLocked={styleLocked}
+                  onSeedApproved={handleSeedApproved as any}
+                />
+              )}
+
+              {/* Pass 1: Style Seed Evolution (when multiple seeds exist) */}
+              {passNum === 1 && renders.filter(r => r.pass_number === 1).length > 1 && (
+                <StyleSeedEvolution renders={renders} />
+              )}
+
+              {/* PromptBuilder — instruction only (Block 2 textarea + pickers) */}
+              <PromptBuilder
+                roomType={room.room_type}
+                roomName={room.room_name}
+                primaryStyle={project.primary_style}
+                budgetBracket={project.budget_bracket}
+                city={project.city ?? 'Bangalore'}
+                occupantProfile={project.occupant_profile ?? 'Young Couple'}
+                vastuRequired={project.vastu_required ?? 'No'}
+                vastuNotes={project.vastu_notes ?? null}
+                stylePreferences={project.style_preferences ?? null}
+                materialPreferences={project.material_preferences ?? null}
+                exclusions={project.exclusions ?? null}
+                passType={getPassType(passNum)}
+                passNumber={passNum}
+                spatialAnalysis={spatialAnalysisData}
+                floorPlanData={floorPlanData}
+                colourPalette={room.colour_palette ?? null}
+                moodboardCount={referenceAllocation.moodboard_count}
+                furnitureRefCount={referenceAllocation.furniture_ref_count}
+                furnitureRefUrls={furnitureRefUrls}
+                onFurnitureRefsChange={setFurnitureRefUrls}
+                onPromptChange={setPrompt}
+                section="instruction"
+                instructionValue={passInstruction}
+                onInstructionChange={setPassInstruction}
+              />
+            </div>
+          )}
+
+          {/* ══════════════════════════════════════════════════════════
+              TAB 2 — PROMPT
+              Block pills · Context bar · Locked blocks · Full prompt
+              + Version history · Preview · AutoSave
+          ══════════════════════════════════════════════════════════ */}
+          {activeLeftTab === 'prompt' && (
+            <div className="space-y-3">
+              {/* PromptBuilder — blocks only (pills, context, locked, full prompt) */}
+              <PromptBuilder
+                roomType={room.room_type}
+                roomName={room.room_name}
+                primaryStyle={project.primary_style}
+                budgetBracket={project.budget_bracket}
+                city={project.city ?? 'Bangalore'}
+                occupantProfile={project.occupant_profile ?? 'Young Couple'}
+                vastuRequired={project.vastu_required ?? 'No'}
+                vastuNotes={project.vastu_notes ?? null}
+                stylePreferences={project.style_preferences ?? null}
+                materialPreferences={project.material_preferences ?? null}
+                exclusions={project.exclusions ?? null}
+                passType={getPassType(passNum)}
+                passNumber={passNum}
+                spatialAnalysis={spatialAnalysisData}
+                floorPlanData={floorPlanData}
+                colourPalette={room.colour_palette ?? null}
+                moodboardCount={referenceAllocation.moodboard_count}
+                furnitureRefCount={referenceAllocation.furniture_ref_count}
+                furnitureRefUrls={furnitureRefUrls}
+                onFurnitureRefsChange={setFurnitureRefUrls}
+                onPromptChange={setPrompt}
+                section="blocks"
+                instructionValue={passInstruction}
+                onInstructionChange={setPassInstruction}
+              />
+
+              {/* Prompt Version History */}
               <PromptVersionHistory
                 roomId={roomId}
                 passNumber={passNum}
                 onRestore={setPrompt}
               />
-            </div>
-            <AutoSaveIndicator saveState={saveState} />
-          </div>
 
-          {/* Generate Button */}
+              {/* Preview + AutoSave row */}
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={() => setShowPromptPreview(true)}
+                  disabled={!prompt.trim()}
+                  className="flex items-center gap-1.5 text-xs text-stone-500 hover:text-stone-800 transition-colors disabled:opacity-40"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                  Preview prompt
+                </button>
+                <AutoSaveIndicator saveState={saveState} />
+              </div>
+            </div>
+          )}
+
+          {/* ══════════════════════════════════════════════════════════
+              TAB 3 — SETTINGS
+              Resolution · Variants · Reference Slots
+          ══════════════════════════════════════════════════════════ */}
+          {activeLeftTab === 'settings' && (
+            <div className="space-y-3">
+              {/* Resolution + Variants */}
+              <div className="space-y-2">
+                <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider">Output Quality</p>
+                <div className="flex items-center gap-2 p-2.5 bg-stone-50 rounded-xl border border-stone-200">
+                  <div className="relative flex-1">
+                    <select
+                      value={resolutionTier}
+                      onChange={(e) => setResolutionTier(e.target.value as '1K' | '2K' | '4K')}
+                      className="w-full appearance-none pl-2.5 pr-6 py-1.5 rounded-lg border border-stone-200 bg-white text-stone-700 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-stone-900 cursor-pointer"
+                    >
+                      <option value="1K">1K · ₹2.50</option>
+                      <option value="2K">2K · ₹6.00</option>
+                      <option value="4K">4K · ₹15.00</option>
+                    </select>
+                    <svg className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-stone-400" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M6 9l6 6 6-6" />
+                    </svg>
+                  </div>
+                  <div className="h-5 w-px bg-stone-200 flex-shrink-0" />
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <span className="text-[10px] text-stone-400 font-medium mr-0.5">Var</span>
+                    {[1, 2, 3].map((count) => (
+                      <button
+                        key={count}
+                        onClick={() => setVariationCount(count as 1 | 2 | 3)}
+                        className={`w-7 h-7 rounded-lg text-xs font-semibold transition-colors ${
+                          variationCount === count
+                            ? 'bg-stone-900 text-white'
+                            : 'bg-white border border-stone-200 text-stone-600 hover:bg-stone-100'
+                        }`}
+                      >
+                        {count}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Reference Slot Summary */}
+              {referenceAllocation.slots.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider">Reference Slots</p>
+                  <div className="p-2.5 bg-stone-50 rounded-xl border border-stone-200 space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <SlotIcon />
+                      <span className="text-[10px] text-stone-500 font-medium">
+                        {referenceAllocation.slots.length} of 14 slots used
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1 flex-wrap">
+                      {referenceAllocation.slots.map(slot => (
+                        <span key={slot.slot} className="text-[10px] text-stone-500 bg-white border border-stone-200 rounded px-1.5 py-0.5">
+                          S{slot.slot}: {slot.label}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Generate Button — always visible */}
           <GenerateButton
             roomId={roomId}
             projectId={projectId}
