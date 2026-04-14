@@ -8,8 +8,8 @@ import { BeforeAfterSlider } from './BeforeAfterSlider';
 
 interface RenderGalleryProps {
   renders: Render[];
-  onApprove: (renderId: string) => void;
-  onReject: (renderId: string) => void;
+  onApprove?: ((renderId: string) => void) | undefined;
+  onReject?: ((renderId: string) => void) | undefined;
   /** Original shell URL used as "before" in the Before/After comparison */
   shellUrl?: string | null;
   /** Sprint 8 — A1: Double-click on render image → open lightbox */
@@ -69,8 +69,8 @@ interface RenderCardProps {
   render: Render;
   flags: ArtifactFlag[] | null;
   shellUrl?: string | null;
-  onApprove: () => void;
-  onReject: () => void;
+  onApprove?: () => void;
+  onReject?: () => void;
   onFlagsUpdated: (renderId: string, flags: ArtifactFlag[]) => void;
 }
 
@@ -130,29 +130,33 @@ function RenderCard({ render, flags, shellUrl, onApprove, onReject, onFlagsUpdat
               </span>
             </div>
 
-            {/* Action buttons */}
-            {isEditable && (
+            {/* Action buttons — only shown when approve/reject handlers are provided */}
+            {isEditable && (onApprove || onReject) && (
               <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button
-                  onClick={onApprove}
-                  disabled={blocked}
-                  title={blocked ? 'Critical artifacts detected — scan expanded for override' : 'Approve this render'}
-                  className={`px-3 py-1.5 text-white text-xs font-medium rounded flex items-center gap-1.5 transition-colors ${
-                    blocked
-                      ? 'bg-stone-400 cursor-not-allowed'
-                      : 'bg-emerald-600 hover:bg-emerald-700'
-                  }`}
-                >
-                  {blocked ? <LockIcon /> : <CheckIcon />}
-                  {blocked ? 'Locked' : 'Approve'}
-                </button>
-                <button
-                  onClick={onReject}
-                  className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-medium rounded flex items-center gap-1.5 transition-colors"
-                >
-                  <XIcon />
-                  Reject
-                </button>
+                {onApprove && (
+                  <button
+                    onClick={onApprove}
+                    disabled={blocked}
+                    title={blocked ? 'Critical artifacts detected — scan expanded for override' : 'Approve this render'}
+                    className={`px-3 py-1.5 text-white text-xs font-medium rounded flex items-center gap-1.5 transition-colors ${
+                      blocked
+                        ? 'bg-stone-400 cursor-not-allowed'
+                        : 'bg-emerald-600 hover:bg-emerald-700'
+                    }`}
+                  >
+                    {blocked ? <LockIcon /> : <CheckIcon />}
+                    {blocked ? 'Locked' : 'Approve'}
+                  </button>
+                )}
+                {onReject && (
+                  <button
+                    onClick={onReject}
+                    className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-medium rounded flex items-center gap-1.5 transition-colors"
+                  >
+                    <XIcon />
+                    Reject
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -272,8 +276,8 @@ export function RenderGallery({ renders, onApprove, onReject, shellUrl, onDouble
                     render={render}
                     flags={flagsMap[render.id] ?? null}
                     shellUrl={shellUrl}
-                    onApprove={() => onApprove(render.id)}
-                    onReject={() => onReject(render.id)}
+                    onApprove={onApprove ? () => onApprove(render.id) : undefined}
+                    onReject={onReject ? () => onReject(render.id) : undefined}
                     onFlagsUpdated={handleFlagsUpdated}
                   />
                 </div>
