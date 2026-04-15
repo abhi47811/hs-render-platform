@@ -31,11 +31,11 @@ const PASS_NAMES: Record<string, string> = {
 
 // ─── Status config ────────────────────────────────────────────────────────────
 const STATUS_CONFIG: Record<string, { bg: string; text: string; label: string }> = {
-  generated:       { bg: 'bg-stone-100',   text: 'text-stone-600',  label: 'Generated' },
-  team_approved:   { bg: 'bg-emerald-100', text: 'text-emerald-700',label: 'Team Approved' },
-  client_approved: { bg: 'bg-stone-800',   text: 'text-white',       label: 'Client Approved' },
-  rejected:        { bg: 'bg-red-100',     text: 'text-red-700',     label: 'Rejected' },
-  not_selected:    { bg: 'bg-stone-100',   text: 'text-stone-600',  label: 'Not Selected' },
+  generated:       { bg: 'bg-[var(--status-neutral-bg)]', text: 'text-[var(--status-neutral)]', label: 'Generated' },
+  team_approved:   { bg: 'bg-[var(--status-ok-bg)]',      text: 'text-[var(--status-ok)]',      label: 'Team Approved' },
+  client_approved: { bg: 'bg-[var(--chrome-0)]',          text: 'text-white',                   label: 'Client Approved' },
+  rejected:        { bg: 'bg-[var(--status-error-bg)]',   text: 'text-[var(--status-error)]',   label: 'Rejected' },
+  not_selected:    { bg: 'bg-[var(--status-neutral-bg)]', text: 'text-[var(--chrome-4)]',       label: 'Not Selected' },
 };
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
@@ -88,7 +88,7 @@ function RenderCard({ render, flags, shellUrl, onApprove, onReject, onFlagsUpdat
   };
 
   return (
-    <div className="group relative bg-white rounded-xl border border-stone-200 overflow-hidden hover:shadow-md transition-shadow">
+    <div className="group relative bg-[var(--surface)] rounded-md border border-[var(--border)] overflow-hidden hover:shadow-md hover:border-[var(--border-strong)] transition-all duration-[120ms]">
       {/* Image / slider area */}
       {showComparison && canCompare ? (
         <div className="p-2">
@@ -102,7 +102,7 @@ function RenderCard({ render, flags, shellUrl, onApprove, onReject, onFlagsUpdat
           />
         </div>
       ) : (
-        <div className="relative w-full h-52 bg-stone-100">
+        <div className="relative w-full h-52 bg-[var(--surface-3)]">
           {render.storage_url ? (
             <Image
               src={render.storage_url}
@@ -111,7 +111,7 @@ function RenderCard({ render, flags, shellUrl, onApprove, onReject, onFlagsUpdat
               className="object-cover"
             />
           ) : (
-            <div className="flex items-center justify-center h-full text-stone-400 text-xs">
+            <div className="flex items-center justify-center h-full text-[var(--text-muted)] text-xs">
               Image loading…
             </div>
           )}
@@ -138,10 +138,10 @@ function RenderCard({ render, flags, shellUrl, onApprove, onReject, onFlagsUpdat
                     onClick={onApprove}
                     disabled={blocked}
                     title={blocked ? 'Critical artifacts detected — scan expanded for override' : 'Approve this render'}
-                    className={`px-3 py-1.5 text-white text-xs font-medium rounded flex items-center gap-1.5 transition-colors ${
+                    className={`px-3 py-1 text-white text-[11px] font-medium rounded-pill flex items-center gap-1.5 transition-colors ${
                       blocked
-                        ? 'bg-stone-400 cursor-not-allowed'
-                        : 'bg-emerald-600 hover:bg-emerald-700'
+                        ? 'bg-[var(--chrome-4)] cursor-not-allowed'
+                        : 'bg-[var(--status-ok)] hover:opacity-90'
                     }`}
                   >
                     {blocked ? <LockIcon /> : <CheckIcon />}
@@ -151,7 +151,7 @@ function RenderCard({ render, flags, shellUrl, onApprove, onReject, onFlagsUpdat
                 {onReject && (
                   <button
                     onClick={onReject}
-                    className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-medium rounded flex items-center gap-1.5 transition-colors"
+                    className="px-3 py-1 bg-[var(--status-error)] hover:opacity-90 text-white text-[11px] font-medium rounded-pill flex items-center gap-1.5 transition-colors"
                   >
                     <XIcon />
                     Reject
@@ -173,24 +173,24 @@ function RenderCard({ render, flags, shellUrl, onApprove, onReject, onFlagsUpdat
       )}
 
       {/* Metadata footer */}
-      <div className="px-3 py-2 border-t border-stone-100 bg-stone-50 flex items-center justify-between">
-        <span className="text-[10px] text-stone-500 tabular-nums">{render.resolution_tier}</span>
+      <div className="px-3 py-2 border-t border-[var(--border)] bg-[var(--surface-2)] flex items-center justify-between">
+        <span className="text-[10px] text-[var(--chrome-4)] tabular-nums uppercase tracking-wide">{render.resolution_tier}</span>
         <div className="flex items-center gap-2">
           {/* Before/After toggle button */}
           {canCompare && (
             <button
               onClick={() => setShowComparison((v) => !v)}
               title={showComparison ? 'Show staged only' : 'Compare before/after'}
-              className={`px-2 py-0.5 rounded text-[10px] font-semibold transition-colors ${
+              className={`px-2 py-0.5 rounded-pill text-[10px] font-medium transition-colors ${
                 showComparison
-                  ? 'bg-stone-900 text-white'
-                  : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                  ? 'bg-[var(--chrome-0)] text-white'
+                  : 'bg-[var(--chrome-6)] text-[var(--chrome-3)] hover:bg-[var(--chrome-5)]'
               }`}
             >
               ↔ Compare
             </button>
           )}
-          <span className="text-[10px] font-medium text-stone-700 tabular-nums">
+          <span className="text-[10px] font-medium text-[var(--text-secondary)] tabular-nums">
             ₹{render.api_cost?.toFixed(2) ?? '—'}
           </span>
         </div>
@@ -224,15 +224,15 @@ export function RenderGallery({ renders, onApprove, onReject, shellUrl, onDouble
 
   if (renders.length === 0) {
     return (
-      <div className="flex items-center justify-center h-full bg-stone-50 rounded-xl border-2 border-dashed border-stone-200 py-20">
+      <div className="flex items-center justify-center h-full bg-[var(--surface-2)] rounded-md border-2 border-dashed border-[var(--border)] py-20">
         <div className="text-center">
-          <svg className="w-10 h-10 text-stone-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
+          <svg className="w-10 h-10 text-[var(--chrome-5)] mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
             <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
             <circle cx="8.5" cy="8.5" r="1.5" />
             <path d="M21 15l-5-5L5 21" />
           </svg>
-          <p className="text-stone-600 font-medium text-sm">No renders yet</p>
-          <p className="text-stone-400 text-xs mt-1">Generate passes to see results here</p>
+          <p className="text-[var(--text-secondary)] font-medium text-sm">No renders yet</p>
+          <p className="text-[var(--text-muted)] text-xs mt-1">Generate passes to see results here</p>
         </div>
       </div>
     );
@@ -262,11 +262,11 @@ export function RenderGallery({ renders, onApprove, onReject, shellUrl, onDouble
         return (
           <div key={key} className="space-y-3">
             <div className="flex items-center gap-2">
-              <h3 className="text-xs font-semibold text-stone-500 uppercase tracking-wider">
+              <h3 className="text-[10px] font-semibold text-[var(--chrome-4)] uppercase tracking-[0.06em]">
                 {passLabel}
               </h3>
-              <div className="flex-1 h-px bg-stone-100" />
-              <span className="text-[10px] text-stone-400">{group.items.length} render{group.items.length !== 1 ? 's' : ''}</span>
+              <div className="flex-1 h-px bg-[var(--border)]" />
+              <span className="text-[10px] text-[var(--chrome-4)]">{group.items.length} render{group.items.length !== 1 ? 's' : ''}</span>
             </div>
 
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">

@@ -84,14 +84,14 @@ export function StepProgressNav({
             disabled={!isAccessible}
             title={step.label}
             className={cn(
-              'flex-shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all whitespace-nowrap',
+              'flex-shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-pill text-[11px] font-medium transition-all whitespace-nowrap',
               isActive
-                ? 'bg-stone-900 text-white'
+                ? 'bg-[var(--chrome-0)] text-white'
                 : isComplete
-                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
+                ? 'bg-[var(--status-ok-bg)] text-[var(--status-ok)] border border-[var(--border)] hover:opacity-80'
                 : isAccessible
-                ? 'bg-stone-100 text-stone-600 hover:bg-stone-200 border border-stone-200'
-                : 'bg-stone-50 text-stone-300 cursor-not-allowed border border-stone-100'
+                ? 'bg-[var(--surface-3)] text-[var(--chrome-3)] hover:bg-[var(--chrome-6)] border border-[var(--border)]'
+                : 'bg-[var(--surface-2)] text-[var(--chrome-5)] cursor-not-allowed border border-[var(--border)]'
             )}
           >
             {isComplete && !isActive && (
@@ -102,10 +102,10 @@ export function StepProgressNav({
             {isPassStep && (
               <span className={cn(
                 'w-4 h-4 rounded-full text-[9px] font-bold flex items-center justify-center flex-shrink-0',
-                isActive ? 'bg-white text-stone-900'
-                  : isComplete ? 'bg-emerald-500 text-white'
-                  : isAccessible ? 'bg-stone-400 text-white'
-                  : 'bg-stone-200 text-stone-400'
+                isActive ? 'bg-white text-[var(--chrome-0)]'
+                  : isComplete ? 'bg-[var(--status-ok)] text-white'
+                  : isAccessible ? 'bg-[var(--chrome-4)] text-white'
+                  : 'bg-[var(--chrome-6)] text-[var(--chrome-4)]'
               )}>
                 {index}
               </span>

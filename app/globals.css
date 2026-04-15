@@ -8,40 +8,53 @@
    ───────────────────────────────────────────────────────────── */
 
 :root {
-  /* Brand */
+  /* ── Brand (amber — only for Generate CTA + active nav) ── */
   --brand:            #C4913A;
   --brand-light:      #FDF4E7;
   --brand-mid:        #D4A84B;
   --brand-dark:       #8B6428;
-  --brand-glow:       rgba(196, 145, 58, 0.14);
+  --brand-glow:       rgba(196, 145, 58, 0.12);
 
-  /* Backgrounds */
-  --bg:               #F4F1EC;   /* warm parchment — the master background */
+  /* ── Page backgrounds ── */
+  --bg:               #F4F1EC;   /* warm parchment — master background */
   --surface:          #FFFFFF;   /* card / panel surface */
-  --surface-2:        #F9F7F4;   /* slightly recessed surfaces */
-  --surface-3:        #F0EDE8;   /* input fills, alt surfaces */
+  --surface-2:        #F9F7F4;   /* recessed surface */
+  --surface-3:        #F0EDE8;   /* input fills */
 
-  /* Borders */
-  --border:           #E5DFD7;   /* default border */
-  --border-strong:    #CEC7BC;   /* dividers, heavier rules */
-  --border-focus:     #C4913A;   /* brand-coloured focus ring */
+  /* ── Chrome scale (B&W-inspired — no decorative color in chrome) ── */
+  --chrome-0:         #000000;   /* primary text, solid CTA */
+  --chrome-1:         #18160F;   /* headings */
+  --chrome-2:         #3D3A33;   /* secondary labels */
+  --chrome-3:         #6B6760;   /* tertiary / captions */
+  --chrome-4:         #9B9185;   /* placeholders, section labels */
+  --chrome-5:         #C8C3BB;   /* dividers */
+  --chrome-6:         #E5DFD7;   /* subtle borders */
+  --chrome-7:         #F0EDE8;   /* hover / subtle bg */
 
-  /* Text */
-  --text-primary:     #18160F;   /* headings, primary labels */
-  --text-secondary:   #5C5549;   /* body text */
-  --text-muted:       #9B9185;   /* placeholders, captions */
-  --text-inverse:     #FFFFFF;   /* text on dark / brand bg */
+  /* ── Borders ── */
+  --border:           #E5DFD7;
+  --border-strong:    #CEC7BC;
+  --border-focus:     #C4913A;
 
-  /* Sidebar — deep warm dark */
-  --sidebar-bg:       #0E0D0B;
-  --sidebar-border:   rgba(255,255,255,0.06);
-  --sidebar-text:     rgba(255,255,255,0.42);
-  --sidebar-text-h:   rgba(255,255,255,0.88);
-  --sidebar-hover:    rgba(255,255,255,0.05);
-  --sidebar-active-bg:rgba(196,145,58,0.12);
-  --sidebar-active:   #D4A84B;
+  /* ── Text ── */
+  --text-primary:     #18160F;
+  --text-secondary:   #3D3A33;
+  --text-muted:       #9B9185;
+  --text-inverse:     #FFFFFF;
 
-  /* Semantic status palette */
+  /* ── Status — desaturated for signal without decoration ── */
+  --status-ok:        #2D6A4F;
+  --status-ok-bg:     #EAF2ED;
+  --status-warn:      #92400E;
+  --status-warn-bg:   #FDF3E7;
+  --status-error:     #7F1D1D;
+  --status-error-bg:  #FDF0F0;
+  --status-info:      #1E3A5F;
+  --status-info-bg:   #EDF3FA;
+  --status-neutral:   #3D3A33;
+  --status-neutral-bg:#F4F1EC;
+
+  /* ── Pipeline status (sidebar dots) ── */
   --status-intake:    #78716C;
   --status-shell:     #2563EB;
   --status-style:     #7C3AED;
@@ -50,31 +63,45 @@
   --status-revisions: #EA580C;
   --status-delivered: #16A34A;
 
-  /* Semantic feedback */
-  --success:          #16A34A;
-  --warning:          #D97706;
-  --danger:           #DC2626;
-  --info:             #2563EB;
+  /* ── Feedback ── */
+  --success:          #2D6A4F;
+  --warning:          #92400E;
+  --danger:           #7F1D1D;
+  --info:             #1E3A5F;
 
-  /* Shadows — warm-tinted shadow stack */
-  --shadow-xs:        0 1px 2px rgba(24,22,15,0.05);
-  --shadow-sm:        0 1px 3px rgba(24,22,15,0.08), 0 1px 2px rgba(24,22,15,0.04);
-  --shadow-md:        0 4px 12px rgba(24,22,15,0.08), 0 2px 4px rgba(24,22,15,0.05);
-  --shadow-lg:        0 8px 24px rgba(24,22,15,0.10), 0 4px 8px rgba(24,22,15,0.06);
-  --shadow-xl:        0 16px 40px rgba(24,22,15,0.12), 0 6px 12px rgba(24,22,15,0.07);
+  /* ── Sidebar — deep warm dark (unchanged) ── */
+  --sidebar-bg:       #0E0D0B;
+  --sidebar-border:   rgba(255,255,255,0.06);
+  --sidebar-text:     rgba(255,255,255,0.42);
+  --sidebar-text-h:   rgba(255,255,255,0.88);
+  --sidebar-hover:    rgba(255,255,255,0.05);
+  --sidebar-active-bg:rgba(196,145,58,0.12);
+  --sidebar-active:   #D4A84B;
 
-  /* Radii */
+  /* ── Shadows — warm-tinted, lighter than before ── */
+  --shadow-xs:        0 1px 2px rgba(24,22,15,0.04);
+  --shadow-sm:        0 1px 3px rgba(24,22,15,0.06), 0 1px 2px rgba(24,22,15,0.03);
+  --shadow-md:        0 4px 16px rgba(24,22,15,0.06), 0 1px 3px rgba(24,22,15,0.04);
+  --shadow-lg:        0 8px 24px rgba(24,22,15,0.08), 0 4px 8px rgba(24,22,15,0.04);
+  --shadow-xl:        0 16px 40px rgba(24,22,15,0.10), 0 6px 12px rgba(24,22,15,0.06);
+  --shadow-render:    0 4px 20px rgba(24,22,15,0.14), 0 1px 4px rgba(24,22,15,0.08);
+
+  /* ── Radii ── */
+  --radius-xs:        3px;
   --radius-sm:        6px;
   --radius-md:        10px;
   --radius-lg:        14px;
   --radius-xl:        18px;
+  --radius-pill:      9999px;
   --radius-full:      9999px;
 
-  /* Transitions */
+  /* ── Transitions ── */
   --ease:             cubic-bezier(0.2, 0, 0, 1);
   --ease-spring:      cubic-bezier(0.34, 1.56, 0.64, 1);
+  --duration-fast:    120ms;
+  --duration-base:    200ms;
 
-  /* ─── Tailwind compatibility vars ─ */
+  /* ── Tailwind compat ── */
   --background:       #F4F1EC;
   --foreground:       #18160F;
 }

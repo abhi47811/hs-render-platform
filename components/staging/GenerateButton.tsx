@@ -236,31 +236,31 @@ export function GenerateButton({
     <div className="space-y-3">
       {/* Checkpoint gate — shown above the button when a CP is blocking generation */}
       {checkpointBlock && (
-        <div className="p-3 bg-amber-50 border border-amber-300 rounded-lg flex items-start gap-2">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-0.5 text-amber-600">
+        <div className="p-3 bg-[var(--status-warn-bg)] border border-[var(--border)] rounded-md flex items-start gap-2">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-0.5 text-[var(--status-warn)]">
             <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>
           </svg>
-          <p className="text-xs text-amber-700 font-medium">{checkpointBlock}</p>
+          <p className="text-xs text-[var(--status-warn)] font-medium">{checkpointBlock}</p>
         </div>
       )}
 
       <button
         onClick={handleGenerate}
         disabled={isLoading || !prompt.trim() || success || queued || !!checkpointBlock || hasActiveRender}
-        className={`w-full py-3 px-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 min-h-[48px] ${
+        className={`w-full py-2.5 px-5 rounded-pill font-medium text-sm transition-all flex items-center justify-center gap-2 min-h-[44px] ${
           checkpointBlock
-            ? 'bg-stone-100 text-stone-400 cursor-not-allowed'
+            ? 'bg-[var(--chrome-7)] text-[var(--chrome-4)] cursor-not-allowed'
             : success
-              ? 'bg-emerald-600 text-white'
+              ? 'bg-[var(--status-ok)] text-white'
               : hasActiveRender
-                ? 'bg-amber-500 text-white cursor-not-allowed'
+                ? 'bg-[var(--status-warn)] text-white cursor-not-allowed'
                 : queued
-                  ? 'bg-amber-500 text-white cursor-not-allowed'
+                  ? 'bg-[var(--status-warn)] text-white cursor-not-allowed'
                   : isLoading
-                    ? 'bg-stone-700 text-white cursor-not-allowed'
+                    ? 'bg-[var(--chrome-1)] text-white cursor-not-allowed'
                     : prompt.trim()
-                      ? 'bg-stone-900 hover:bg-stone-800 text-white cursor-pointer'
-                      : 'bg-stone-200 text-stone-400 cursor-not-allowed'
+                      ? 'bg-[var(--brand)] hover:bg-[var(--brand-dark)] text-white cursor-pointer shadow-sm'
+                      : 'bg-[var(--chrome-6)] text-[var(--chrome-4)] cursor-not-allowed'
         }`}
       >
         {isLoading ? (
@@ -331,35 +331,35 @@ export function GenerateButton({
         />
       )}
       {error && !failureType && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-sm text-red-700">
-            <span className="font-semibold">Error:</span> {error}
+        <div className="p-3 bg-[var(--status-error-bg)] border border-[var(--border)] rounded-md">
+          <p className="text-xs text-[var(--status-error)]">
+            <span className="font-medium">Error:</span> {error}
           </p>
         </div>
       )}
 
       {success && (
-        <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
-          <p className="text-sm text-emerald-700">
-            <span className="font-semibold">Success!</span> Renders are being generated. Check the gallery below.
+        <div className="p-3 bg-[var(--status-ok-bg)] border border-[var(--border)] rounded-md">
+          <p className="text-xs text-[var(--status-ok)]">
+            <span className="font-medium">Success!</span> Renders are being generated. Check the gallery below.
           </p>
         </div>
       )}
 
       {/* Sec 32: Queued state banner */}
       {queued && (
-        <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
-          <p className="text-sm text-amber-700">
-            <span className="font-semibold">Queued!</span> Another generation is in progress. Checking for results every 5s — renders will appear automatically when ready.
+        <div className="p-3 bg-[var(--status-warn-bg)] border border-[var(--border)] rounded-md">
+          <p className="text-xs text-[var(--status-warn)]">
+            <span className="font-medium">Queued!</span> Another generation is in progress. Checking for results every 5s — renders will appear automatically when ready.
           </p>
         </div>
       )}
 
-      <div className="p-3 bg-stone-50 rounded-lg border border-stone-200">
-        <p className="text-xs text-stone-700 font-medium tabular-nums">
+      <div className="p-3 bg-[var(--surface-2)] rounded-md border border-[var(--border)]">
+        <p className="text-xs text-[var(--text-primary)] font-medium tabular-nums">
           Estimated cost: ₹{(getCostPerImage(resolutionTier) * variationCount).toFixed(2)}
         </p>
-        <p className="text-xs text-stone-500 mt-0.5">
+        <p className="text-xs text-[var(--text-muted)] mt-0.5">
           {variationCount} variation{variationCount > 1 ? 's' : ''} · {resolutionTier} resolution
         </p>
       </div>

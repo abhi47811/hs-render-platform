@@ -31,14 +31,14 @@ function StagingLayoutInner({
   return (
     <div className="min-h-full bg-background">
       {/* ── Top chrome ── */}
-      <div className="sticky top-0 z-30 bg-white border-b border-stone-200 px-4 py-2.5 shadow-sm">
+      <div className="sticky top-0 z-30 bg-[var(--surface)] border-b border-[var(--border)] px-4 py-2.5 shadow-xs">
         {/* Row 1: Room identity + cost badge */}
         <div className="flex items-center justify-between gap-3 mb-2">
           <div className="min-w-0">
-            <h1 className="text-sm font-bold text-stone-900 truncate leading-tight">
+            <h1 className="text-sm font-medium text-[var(--text-primary)] truncate leading-tight tracking-[-0.01em]">
               {room.room_name}
             </h1>
-            <p className="text-[11px] text-stone-500 truncate">
+            <p className="text-[11px] text-[var(--text-muted)] truncate">
               {room.room_type}
               {project?.primary_style ? ` · ${project.primary_style}` : ''}
               {project?.city ? ` · ${project.city}` : ''}
@@ -46,8 +46,8 @@ function StagingLayoutInner({
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
             {(cpStatuses.cp2 === 'approved' || (room as any).style_locked) && (
-              <span className="text-[10px] text-emerald-600 font-semibold bg-emerald-50 px-1.5 py-0.5 rounded-full border border-emerald-200 whitespace-nowrap">
-                🔒 Style locked
+              <span className="text-[10px] text-[var(--status-ok)] font-semibold bg-[var(--status-ok-bg)] px-1.5 py-0.5 rounded-xs border border-[var(--border)] whitespace-nowrap">
+                Style locked
               </span>
             )}
             <ProjectCostBadge

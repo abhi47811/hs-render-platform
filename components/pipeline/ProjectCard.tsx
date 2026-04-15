@@ -12,31 +12,31 @@ interface ProjectCardProps {
 }
 
 const BUDGET_BADGE: Record<string, { label: string; bg: string; text: string }> = {
-  economy:  { label: 'Eco',  bg: '#F0FDF4', text: '#16A34A' },
-  standard: { label: 'Std',  bg: '#EFF6FF', text: '#2563EB' },
-  premium:  { label: 'Pre',  bg: '#F5F3FF', text: '#7C3AED' },
-  luxury:   { label: 'Lux',  bg: '#FDF4E7', text: '#C4913A' },
+  economy:  { label: 'Eco',  bg: 'var(--status-ok-bg)',      text: 'var(--status-ok)' },
+  standard: { label: 'Std',  bg: 'var(--status-info-bg)',    text: 'var(--status-info)' },
+  premium:  { label: 'Pre',  bg: 'var(--surface-3)',         text: 'var(--chrome-2)' },
+  luxury:   { label: 'Lux',  bg: 'var(--brand-light)',       text: 'var(--brand-dark)' },
 }
 
 const PRIORITY_BADGE: Record<string, { bg: string; text: string; border: string }> = {
-  Urgent: { bg: '#FEF2F2', text: '#DC2626', border: '#FECACA' },
-  High:   { bg: '#FFFBEB', text: '#D97706', border: '#FDE68A' },
-  Normal: { bg: '',        text: '',        border: '' },
+  Urgent: { bg: 'var(--status-error-bg)', text: 'var(--status-error)', border: 'var(--border)' },
+  High:   { bg: 'var(--status-warn-bg)',  text: 'var(--status-warn)',  border: 'var(--border)' },
+  Normal: { bg: '',                        text: '',                    border: '' },
 }
 
-// Left border accent maps SLA urgency
+// Left border accent maps SLA urgency (desaturated — signal without decoration)
 const SLA_BORDER_COLOR: Record<string, string> = {
-  green:    '#22C55E',
-  amber:    '#F59E0B',
-  red:      '#EF4444',
-  breached: '#D4CFC9',
+  green:    'var(--status-ok)',
+  amber:    'var(--status-warn)',
+  red:      'var(--status-error)',
+  breached: 'var(--chrome-5)',
 }
 
 // Card background tint when critical
 const SLA_CARD_BG: Record<string, string> = {
   green:    'var(--surface)',
   amber:    'var(--surface)',
-  red:      '#FFF5F5',
+  red:      'var(--status-error-bg)',
   breached: 'var(--surface-2)',
 }
 
@@ -136,11 +136,11 @@ export function ProjectCard({ project, isSelected = false, onToggleSelect }: Pro
               {/* Revision badge */}
               {project.status === 'revisions' && (
                 <span
-                  className="text-[9px] font-bold px-1.5 py-0.5 rounded-md"
+                  className="text-[9px] font-semibold px-1.5 py-0.5 rounded-xs tracking-[0.06em] uppercase"
                   style={{
-                    background: project.revision_count >= project.revision_limit ? '#FEF2F2' : '#FFF7ED',
-                    color:      project.revision_count >= project.revision_limit ? '#DC2626' : '#EA580C',
-                    border:     `1px solid ${project.revision_count >= project.revision_limit ? '#FECACA' : '#FED7AA'}`,
+                    background: project.revision_count >= project.revision_limit ? 'var(--status-error-bg)' : 'var(--status-warn-bg)',
+                    color:      project.revision_count >= project.revision_limit ? 'var(--status-error)' : 'var(--status-warn)',
+                    border:     '1px solid var(--border)',
                   }}
                 >
                   REV {project.revision_count}/{project.revision_limit}
