@@ -29,7 +29,7 @@ function StagingLayoutInner({
   const { room, project, localCurrentPass, cpStatuses, costRefreshKey } = useStagingContext();
 
   return (
-    <div className="min-h-screen bg-stone-50">
+    <div className="min-h-full bg-background">
       {/* ── Top chrome ── */}
       <div className="sticky top-0 z-30 bg-white border-b border-stone-200 px-4 py-2.5 shadow-sm">
         {/* Row 1: Room identity + cost badge */}
