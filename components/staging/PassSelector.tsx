@@ -28,10 +28,10 @@ export function PassSelector({
     <div className="space-y-1.5">
       {/* Label row */}
       <div className="flex items-center justify-between">
-        <span className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider">
+        <span className="text-[10px] font-semibold text-[var(--chrome-4)] uppercase tracking-wider">
           Staging Pipeline
         </span>
-        <span className="text-[10px] text-stone-500">
+        <span className="text-[10px] text-[var(--chrome-4)]">
           Pass {selectedPass} · {selectedPassName}
         </span>
       </div>
@@ -52,25 +52,25 @@ export function PassSelector({
               disabled={isFuture}
               title={`Pass ${pass.number}: ${pass.name}`}
               className={cn(
-                'flex-shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all whitespace-nowrap',
+                'flex-shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-pill text-[11px] font-medium transition-all whitespace-nowrap border',
                 isSelected
-                  ? 'bg-stone-900 text-white'
+                  ? 'bg-[var(--chrome-0)] text-white border-transparent'
                   : isCompleted
-                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
+                  ? 'bg-[var(--status-ok-bg)] text-[var(--status-ok)] border-[var(--border)] hover:opacity-80'
                   : isNextPass
-                  ? 'bg-amber-50 text-amber-800 border border-amber-300 ring-1 ring-amber-400 hover:bg-amber-100'
+                  ? 'bg-[var(--status-warn-bg)] text-[var(--status-warn)] border-[var(--border)] hover:opacity-80'
                   : isCurrent && !isSelected
-                  ? 'bg-stone-100 text-stone-700 hover:bg-stone-200'
-                  : 'bg-stone-50 text-stone-300 cursor-not-allowed border border-stone-100'
+                  ? 'bg-[var(--surface-3)] text-[var(--chrome-3)] border-[var(--border)] hover:bg-[var(--chrome-6)]'
+                  : 'bg-[var(--surface-2)] text-[var(--chrome-5)] cursor-not-allowed border-[var(--border)]'
               )}
             >
               <span className={cn(
                 'w-1.5 h-1.5 rounded-full flex-shrink-0',
-                isCompleted ? 'bg-emerald-500'
+                isCompleted ? 'bg-[var(--status-ok)]'
                   : isSelected ? 'bg-white'
-                  : isCurrent ? 'bg-stone-600'
-                  : isNextPass ? 'bg-amber-500'
-                  : 'bg-stone-200'
+                  : isCurrent ? 'bg-[var(--chrome-3)]'
+                  : isNextPass ? 'bg-[var(--status-warn)]'
+                  : 'bg-[var(--chrome-6)]'
               )} />
               {pass.short}
             </button>

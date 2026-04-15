@@ -346,15 +346,15 @@ export function PassClient({ projectId, roomId, passNum, initialRenders }: PassC
           />
 
           {/* ── 3-Tab Bar ── */}
-          <div className="flex gap-1 bg-stone-100 rounded-xl p-1">
+          <div className="flex gap-0.5 bg-[var(--surface-3)] rounded-md p-0.5 border border-[var(--border)]">
             {(['configure', 'prompt', 'settings'] as const).map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveLeftTab(tab)}
-                className={`flex-1 py-1.5 rounded-lg text-[11px] font-semibold transition-colors ${
+                className={`flex-1 py-1.5 rounded text-[11px] font-medium transition-colors ${
                   activeLeftTab === tab
-                    ? 'bg-stone-900 text-white shadow-sm'
-                    : 'text-stone-500 hover:text-stone-700 hover:bg-stone-50'
+                    ? 'bg-[var(--surface)] text-[var(--text-primary)] shadow-xs border border-[var(--border)]'
+                    : 'text-[var(--chrome-4)] hover:text-[var(--chrome-2)]'
                 }`}
               >
                 {tab === 'configure' ? 'Configure' : tab === 'prompt' ? 'Prompt' : 'Settings'}
@@ -494,33 +494,33 @@ export function PassClient({ projectId, roomId, passNum, initialRenders }: PassC
             <div className="space-y-3">
               {/* Resolution + Variants */}
               <div className="space-y-2">
-                <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider">Output Quality</p>
-                <div className="flex items-center gap-2 p-2.5 bg-stone-50 rounded-xl border border-stone-200">
+                <p className="text-[10px] font-semibold text-[var(--chrome-4)] uppercase tracking-wider">Output Quality</p>
+                <div className="flex items-center gap-2 p-2.5 bg-[var(--surface-3)] rounded-md border border-[var(--border)]">
                   <div className="relative flex-1">
                     <select
                       value={resolutionTier}
                       onChange={(e) => setResolutionTier(e.target.value as '1K' | '2K' | '4K')}
-                      className="w-full appearance-none pl-2.5 pr-6 py-1.5 rounded-lg border border-stone-200 bg-white text-stone-700 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-stone-900 cursor-pointer"
+                      className="w-full appearance-none pl-2.5 pr-6 py-1.5 rounded border border-[var(--border)] bg-[var(--surface)] text-[var(--text-primary)] text-xs font-medium focus:outline-none focus:ring-1 focus:ring-[var(--chrome-0)] cursor-pointer"
                     >
                       <option value="1K">1K · ₹2.50</option>
                       <option value="2K">2K · ₹6.00</option>
                       <option value="4K">4K · ₹15.00</option>
                     </select>
-                    <svg className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-stone-400" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <svg className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-[var(--chrome-4)]" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M6 9l6 6 6-6" />
                     </svg>
                   </div>
-                  <div className="h-5 w-px bg-stone-200 flex-shrink-0" />
+                  <div className="h-5 w-px bg-[var(--border)] flex-shrink-0" />
                   <div className="flex items-center gap-1 flex-shrink-0">
-                    <span className="text-[10px] text-stone-400 font-medium mr-0.5">Var</span>
+                    <span className="text-[10px] text-[var(--chrome-4)] font-medium mr-0.5">Var</span>
                     {[1, 2, 3].map((count) => (
                       <button
                         key={count}
                         onClick={() => setVariationCount(count as 1 | 2 | 3)}
-                        className={`w-7 h-7 rounded-lg text-xs font-semibold transition-colors ${
+                        className={`w-7 h-7 rounded text-xs font-medium transition-colors ${
                           variationCount === count
-                            ? 'bg-stone-900 text-white'
-                            : 'bg-white border border-stone-200 text-stone-600 hover:bg-stone-100'
+                            ? 'bg-[var(--chrome-0)] text-white'
+                            : 'bg-[var(--surface)] border border-[var(--border)] text-[var(--chrome-3)] hover:bg-[var(--surface-3)]'
                         }`}
                       >
                         {count}
@@ -533,17 +533,17 @@ export function PassClient({ projectId, roomId, passNum, initialRenders }: PassC
               {/* Reference Slot Summary */}
               {referenceAllocation.slots.length > 0 && (
                 <div className="space-y-2">
-                  <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider">Reference Slots</p>
-                  <div className="p-2.5 bg-stone-50 rounded-xl border border-stone-200 space-y-1.5">
+                  <p className="text-[10px] font-semibold text-[var(--chrome-4)] uppercase tracking-wider">Reference Slots</p>
+                  <div className="p-2.5 bg-[var(--surface-3)] rounded-md border border-[var(--border)] space-y-1.5">
                     <div className="flex items-center gap-2">
                       <SlotIcon />
-                      <span className="text-[10px] text-stone-500 font-medium">
+                      <span className="text-[10px] text-[var(--chrome-4)] font-medium">
                         {referenceAllocation.slots.length} of 14 slots used
                       </span>
                     </div>
                     <div className="flex items-center gap-1 flex-wrap">
                       {referenceAllocation.slots.map(slot => (
-                        <span key={slot.slot} className="text-[10px] text-stone-500 bg-white border border-stone-200 rounded px-1.5 py-0.5">
+                        <span key={slot.slot} className="text-[10px] text-[var(--chrome-4)] bg-[var(--surface)] border border-[var(--border)] rounded px-1.5 py-0.5">
                           S{slot.slot}: {slot.label}
                         </span>
                       ))}
@@ -577,19 +577,19 @@ export function PassClient({ projectId, roomId, passNum, initialRenders }: PassC
         <div className="lg:col-span-2">
           <div className="mb-2 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <h2 className="text-sm font-semibold text-stone-800">
+              <h2 className="text-sm font-medium text-[var(--text-primary)] tracking-[-0.01em]">
                 Pass {passNum} · {getPassType(passNum).replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
               </h2>
               {styleLocked && (
-                <span className="text-[10px] text-emerald-600 font-semibold bg-emerald-50 px-1.5 py-0.5 rounded-full border border-emerald-200">
-                  🔒 Style locked
+                <span className="text-[10px] text-[var(--status-ok)] font-semibold bg-[var(--status-ok-bg)] px-1.5 py-0.5 rounded-xs border border-[var(--border)]">
+                  Style locked
                 </span>
               )}
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-[10px] text-stone-400">Double-click to fullscreen</span>
+              <span className="text-[10px] text-[var(--chrome-5)]">Double-click to fullscreen</span>
               {isRefreshing && (
-                <svg className="animate-spin text-stone-400" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg className="animate-spin text-[var(--chrome-5)]" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M21 12a9 9 0 11-6.219-8.56" />
                 </svg>
               )}
@@ -612,14 +612,14 @@ export function PassClient({ projectId, roomId, passNum, initialRenders }: PassC
             {passNum > 1 ? (
               <button
                 onClick={() => router.push(`/projects/${projectId}/rooms/${roomId}/staging/pass/${passNum - 1}`)}
-                className="text-sm text-stone-500 hover:text-stone-800 transition-colors"
+                className="text-sm text-[var(--chrome-4)] hover:text-[var(--chrome-1)] transition-colors"
               >
                 ← Pass {passNum - 1}
               </button>
             ) : (
               <button
                 onClick={() => router.push(`/projects/${projectId}/rooms/${roomId}/staging/setup`)}
-                className="text-sm text-stone-500 hover:text-stone-800 transition-colors"
+                className="text-sm text-[var(--chrome-4)] hover:text-[var(--chrome-1)] transition-colors"
               >
                 ← Setup
               </button>
@@ -627,14 +627,14 @@ export function PassClient({ projectId, roomId, passNum, initialRenders }: PassC
             {passNum < 6 ? (
               <button
                 onClick={() => router.push(`/projects/${projectId}/rooms/${roomId}/staging/pass/${passNum + 1}`)}
-                className="text-sm text-stone-500 hover:text-stone-800 transition-colors"
+                className="text-sm text-[var(--chrome-4)] hover:text-[var(--chrome-1)] transition-colors"
               >
                 Pass {passNum + 1} →
               </button>
             ) : (
               <button
                 onClick={() => router.push(`/projects/${projectId}/rooms/${roomId}/staging/review`)}
-                className="text-sm text-stone-500 hover:text-stone-800 transition-colors"
+                className="text-sm text-[var(--chrome-4)] hover:text-[var(--chrome-1)] transition-colors"
               >
                 Review →
               </button>

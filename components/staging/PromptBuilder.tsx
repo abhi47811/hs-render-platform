@@ -393,12 +393,12 @@ export function PromptBuilder({
         <>
           {/* Header */}
           <div className="flex items-center justify-between">
-            <h3 className="text-xs font-semibold text-stone-500 uppercase tracking-wider">Generation Prompt</h3>
+            <h3 className="text-xs font-medium text-[var(--chrome-4)] uppercase tracking-wider">Generation Prompt</h3>
             <div className="flex items-center gap-2">
-              <span className="text-xs text-stone-400 tabular-nums">{assembled.char_count.toLocaleString()} chars</span>
+              <span className="text-xs text-[var(--chrome-5)] tabular-nums">{assembled.char_count.toLocaleString()} chars</span>
               <button
                 onClick={() => setShowPreview(true)}
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-stone-200 text-xs font-medium text-stone-600 hover:bg-stone-50 transition-colors cursor-pointer"
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded border border-[var(--border)] text-xs font-medium text-[var(--chrome-3)] hover:bg-[var(--surface-3)] transition-colors cursor-pointer"
               >
                 <EyeIcon />
                 Preview blocks
@@ -411,38 +411,38 @@ export function PromptBuilder({
             {activeBlocks.map((block) => (
               <div
                 key={block.block_number}
-                className="flex items-center gap-1 bg-white border border-stone-100 rounded-full px-2 py-0.5"
+                className="flex items-center gap-1 bg-[var(--surface)] border border-[var(--border)] rounded-full px-2 py-0.5"
                 title={`Block ${block.block_number}: ${block.label}${block.is_editable ? ' (Editable)' : ' (Auto)'}`}
               >
-                <div className={`w-1.5 h-1.5 rounded-full ${BLOCK_DOT_COLOURS[block.block_number] ?? 'bg-stone-400'}`} />
-                <span className="text-[9px] font-medium text-stone-500 leading-none">
+                <div className={`w-1.5 h-1.5 rounded-full ${BLOCK_DOT_COLOURS[block.block_number] ?? 'bg-[var(--chrome-5)]'}`} />
+                <span className="text-[9px] font-medium text-[var(--chrome-4)] leading-none">
                   B{block.block_number}
                 </span>
                 {block.is_editable && (
-                  <span className="text-[8px] text-stone-900 font-bold leading-none">✎</span>
+                  <span className="text-[8px] text-[var(--chrome-1)] font-bold leading-none">✎</span>
                 )}
               </div>
             ))}
           </div>
 
           {/* Context bar */}
-          <div className="bg-stone-50 border border-stone-100 rounded-xl p-3">
-            <p className="text-xs text-stone-600 leading-relaxed">
-              <span className="font-semibold text-stone-700">{roomType}</span>
-              <span className="text-stone-300 mx-1">·</span>
-              <span className="font-semibold text-stone-700">{primaryStyle}</span>
-              <span className="text-stone-300 mx-1">·</span>
-              <span className="text-stone-500">{budgetBracket}</span>
-              <span className="text-stone-300 mx-1">·</span>
-              <span className="text-stone-500">{city}</span>
+          <div className="bg-[var(--surface-3)] border border-[var(--border)] rounded-md p-3">
+            <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+              <span className="font-medium text-[var(--text-primary)]">{roomType}</span>
+              <span className="text-[var(--chrome-6)] mx-1">·</span>
+              <span className="font-medium text-[var(--text-primary)]">{primaryStyle}</span>
+              <span className="text-[var(--chrome-6)] mx-1">·</span>
+              <span className="text-[var(--chrome-4)]">{budgetBracket}</span>
+              <span className="text-[var(--chrome-6)] mx-1">·</span>
+              <span className="text-[var(--chrome-4)]">{city}</span>
               {vastuRequired !== 'No' && (
-                <><span className="text-stone-300 mx-1">·</span><span className="text-orange-600 font-medium">Vastu {vastuRequired}</span></>
+                <><span className="text-[var(--chrome-6)] mx-1">·</span><span className="text-[var(--status-warn)] font-medium">Vastu {vastuRequired}</span></>
               )}
               {spatialAnalysis && (
-                <><span className="text-stone-300 mx-1">·</span><span className="text-emerald-600 font-medium">Spatial locked</span></>
+                <><span className="text-[var(--chrome-6)] mx-1">·</span><span className="text-[var(--status-ok)] font-medium">Spatial locked</span></>
               )}
               {colourPalette && passNumber > 1 && (
-                <><span className="text-stone-300 mx-1">·</span><span className="text-emerald-600 font-medium">Palette locked</span></>
+                <><span className="text-[var(--chrome-6)] mx-1">·</span><span className="text-[var(--status-ok)] font-medium">Palette locked</span></>
               )}
             </p>
           </div>
@@ -454,10 +454,10 @@ export function PromptBuilder({
       <>{/* Block 2: Pass Instruction — ONLY EDITABLE BLOCK */}
       <div className="space-y-1.5">
         <div className="flex items-center justify-between">
-          <label className="text-xs font-semibold text-stone-700 flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-full bg-stone-900" />
+          <label className="text-xs font-medium text-[var(--text-primary)] flex items-center gap-1.5">
+            <div className="w-2 h-2 rounded-full bg-[var(--chrome-2)]" />
             Pass Instruction
-            <span className="text-[9px] font-bold bg-stone-900 text-white px-1.5 py-0.5 rounded-full">BLOCK 2</span>
+            <span className="text-[9px] font-semibold bg-[var(--chrome-2)] text-white px-1.5 py-0.5 rounded-xs tracking-wide">B2</span>
           </label>
           <div className="flex items-center gap-2">
             {/* Template picker button */}
@@ -466,8 +466,8 @@ export function PromptBuilder({
                 onClick={handleOpenTemplates}
                 className={`flex items-center gap-1 text-[10px] font-medium transition-colors cursor-pointer px-2 py-1 rounded-lg border ${
                   showTemplates
-                    ? 'bg-stone-900 text-white border-stone-900'
-                    : 'text-stone-500 border-stone-200 hover:border-stone-400 hover:text-stone-700 bg-white'
+                    ? 'bg-[var(--chrome-0)] text-white border-[var(--chrome-0)]'
+                    : 'text-[var(--chrome-4)] border-[var(--border)] hover:border-[var(--border-strong)] hover:text-[var(--chrome-2)] bg-[var(--surface)]'
                 }`}
                 title="Load a saved prompt template"
               >
@@ -477,48 +477,48 @@ export function PromptBuilder({
 
               {/* Template dropdown */}
               {showTemplates && (
-                <div className="absolute right-0 top-full mt-1.5 w-80 bg-white rounded-xl border border-stone-200 shadow-lg z-20 overflow-hidden">
-                  <div className="px-3 py-2 border-b border-stone-100 flex items-center justify-between">
-                    <span className="text-[10px] font-semibold text-stone-500 uppercase tracking-wider">
+                <div className="absolute right-0 top-full mt-1.5 w-80 bg-[var(--surface)] rounded-md border border-[var(--border)] shadow-md z-20 overflow-hidden">
+                  <div className="px-3 py-2 border-b border-[var(--border)] flex items-center justify-between">
+                    <span className="text-[10px] font-medium text-[var(--chrome-4)] uppercase tracking-wider">
                       Templates · {passType} · {roomType}
                     </span>
                     {loadingTemplates && <SpinnerIcon />}
                   </div>
 
                   {templateError && (
-                    <div className="px-3 py-3 text-xs text-red-600">{templateError}</div>
+                    <div className="px-3 py-3 text-xs text-[var(--status-error)]">{templateError}</div>
                   )}
 
                   {!loadingTemplates && !templateError && templates.length === 0 && (
                     <div className="px-3 py-4 text-center">
-                      <p className="text-xs text-stone-400">No templates for this pass + room type yet.</p>
-                      <p className="text-[10px] text-stone-300 mt-1">Templates are saved from the prompt_templates table.</p>
+                      <p className="text-xs text-[var(--chrome-4)]">No templates for this pass + room type yet.</p>
+                      <p className="text-[10px] text-[var(--chrome-5)] mt-1">Templates are saved from the prompt_templates table.</p>
                     </div>
                   )}
 
                   {!loadingTemplates && templates.length > 0 && (
-                    <div className="max-h-64 overflow-y-auto divide-y divide-stone-50">
+                    <div className="max-h-64 overflow-y-auto divide-y divide-[var(--border)]">
                       {templates.map((tpl) => (
                         <button
                           key={tpl.id}
                           onClick={() => handleSelectTemplate(tpl)}
-                          className="w-full text-left px-3 py-2.5 hover:bg-stone-50 transition-colors group"
+                          className="w-full text-left px-3 py-2.5 hover:bg-[var(--surface-3)] transition-colors group"
                         >
                           <div className="flex items-start justify-between gap-2">
                             <div className="flex-1 min-w-0">
-                              <p className="text-xs font-medium text-stone-800 truncate group-hover:text-stone-900">
+                              <p className="text-xs font-medium text-[var(--text-primary)] truncate">
                                 {tpl.name}
                               </p>
-                              <p className="text-[10px] text-stone-400 mt-0.5 line-clamp-2 leading-relaxed">
+                              <p className="text-[10px] text-[var(--chrome-4)] mt-0.5 line-clamp-2 leading-relaxed">
                                 {tpl.instruction.slice(0, 120)}{tpl.instruction.length > 120 ? '…' : ''}
                               </p>
                             </div>
-                            <span className="flex-shrink-0 text-[9px] text-stone-300 tabular-nums mt-0.5">
+                            <span className="flex-shrink-0 text-[9px] text-[var(--chrome-5)] tabular-nums mt-0.5">
                               ×{tpl.usage_count}
                             </span>
                           </div>
                           {tpl.room_type === null && (
-                            <span className="mt-1 inline-block text-[8px] bg-stone-100 text-stone-400 px-1.5 py-0.5 rounded-full">
+                            <span className="mt-1 inline-block text-[8px] bg-[var(--surface-3)] text-[var(--chrome-4)] px-1.5 py-0.5 rounded-full">
                               Global
                             </span>
                           )}
@@ -536,8 +536,8 @@ export function PromptBuilder({
                 onClick={handleOpenVault}
                 className={`flex items-center gap-1 text-[10px] font-medium transition-colors cursor-pointer px-2 py-1 rounded-lg border ${
                   showVault
-                    ? 'bg-stone-900 text-white border-stone-900'
-                    : 'text-stone-500 border-stone-200 hover:border-stone-400 hover:text-stone-700 bg-white'
+                    ? 'bg-[var(--chrome-0)] text-white border-[var(--chrome-0)]'
+                    : 'text-[var(--chrome-4)] border-[var(--border)] hover:border-[var(--border-strong)] hover:text-[var(--chrome-2)] bg-[var(--surface)]'
                 }`}
                 title="Pick a style from the vault as reference"
               >
@@ -547,35 +547,35 @@ export function PromptBuilder({
 
               {/* Vault dropdown */}
               {showVault && (
-                <div className="absolute right-0 top-full mt-1.5 w-80 bg-white rounded-xl border border-stone-200 shadow-lg z-20 overflow-hidden">
-                  <div className="px-3 py-2 border-b border-stone-100 flex items-center justify-between">
-                    <span className="text-[10px] font-semibold text-stone-500 uppercase tracking-wider">
+                <div className="absolute right-0 top-full mt-1.5 w-80 bg-[var(--surface)] rounded-md border border-[var(--border)] shadow-md z-20 overflow-hidden">
+                  <div className="px-3 py-2 border-b border-[var(--border)] flex items-center justify-between">
+                    <span className="text-[10px] font-medium text-[var(--chrome-4)] uppercase tracking-wider">
                       Style Vault · {roomType}
                     </span>
                     {loadingVault && <SpinnerIcon />}
                   </div>
 
                   {vaultError && (
-                    <div className="px-3 py-3 text-xs text-red-600">{vaultError}</div>
+                    <div className="px-3 py-3 text-xs text-[var(--status-error)]">{vaultError}</div>
                   )}
 
                   {!loadingVault && !vaultError && vaultEntries.length === 0 && (
                     <div className="px-3 py-4 text-center">
-                      <p className="text-xs text-stone-400">No vault entries yet for this room type.</p>
-                      <p className="text-[10px] text-stone-300 mt-1">Entries are auto-saved when CP2 is approved.</p>
+                      <p className="text-xs text-[var(--chrome-4)]">No vault entries yet for this room type.</p>
+                      <p className="text-[10px] text-[var(--chrome-5)] mt-1">Entries are auto-saved when CP2 is approved.</p>
                     </div>
                   )}
 
                   {!loadingVault && vaultEntries.length > 0 && (
-                    <div className="max-h-64 overflow-y-auto divide-y divide-stone-50">
+                    <div className="max-h-64 overflow-y-auto divide-y divide-[var(--border)]">
                       {vaultEntries.map((entry) => (
                         <button
                           key={entry.id}
                           onClick={() => handleSelectVaultEntry(entry)}
-                          className="w-full text-left px-3 py-2.5 hover:bg-stone-50 transition-colors group flex items-center gap-2.5"
+                          className="w-full text-left px-3 py-2.5 hover:bg-[var(--surface-3)] transition-colors group flex items-center gap-2.5"
                         >
                           {/* Thumbnail */}
-                          <div className="w-10 h-10 rounded-lg bg-stone-100 overflow-hidden flex-shrink-0">
+                          <div className="w-10 h-10 rounded bg-[var(--surface-3)] overflow-hidden flex-shrink-0">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
                               src={entry.image_url}
@@ -585,14 +585,14 @@ export function PromptBuilder({
                             />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-xs font-medium text-stone-800 truncate group-hover:text-stone-900">
+                            <p className="text-xs font-medium text-[var(--text-primary)] truncate">
                               {entry.style_name}
                             </p>
-                            <p className="text-[10px] text-stone-400 mt-0.5">
+                            <p className="text-[10px] text-[var(--chrome-4)] mt-0.5">
                               {[entry.budget_bracket, entry.city].filter(Boolean).join(' · ')}
                             </p>
                           </div>
-                          <span className="flex-shrink-0 text-[9px] text-stone-300 tabular-nums">
+                          <span className="flex-shrink-0 text-[9px] text-[var(--chrome-5)] tabular-nums">
                             ×{entry.usage_count}
                           </span>
                         </button>
@@ -616,7 +616,7 @@ export function PromptBuilder({
             {/* Reset button */}
             <button
               onClick={handleReset}
-              className="flex items-center gap-1 text-[10px] text-stone-400 hover:text-stone-600 transition-colors cursor-pointer"
+              className="flex items-center gap-1 text-[10px] text-[var(--chrome-5)] hover:text-[var(--chrome-3)] transition-colors cursor-pointer"
               title="Reset to default instruction"
             >
               <ResetIcon />
@@ -628,10 +628,10 @@ export function PromptBuilder({
           value={effectiveInstruction}
           onChange={(e) => handleInstructionChange(e.target.value)}
           rows={4}
-          className="w-full px-3 py-2.5 rounded-xl border border-stone-900 bg-white text-stone-800 text-sm placeholder-stone-300 focus:outline-none focus:ring-2 focus:ring-stone-900 resize-none leading-relaxed"
+          className="w-full px-3 py-2.5 rounded-md border border-[var(--border)] bg-[var(--surface-3)] text-[var(--text-primary)] text-sm placeholder-[var(--chrome-5)] focus:outline-none focus:ring-1 focus:ring-[var(--chrome-0)] focus:border-[var(--chrome-0)] resize-none leading-relaxed transition-colors"
           placeholder="Describe what this pass should achieve…"
         />
-        <p className="text-[10px] text-stone-400">
+        <p className="text-[10px] text-[var(--chrome-5)]">
           This is the only editable block. All other blocks are auto-assembled and locked.
         </p>
       </div>
@@ -643,16 +643,16 @@ export function PromptBuilder({
         <>
           {/* Locked blocks summary */}
           {hasLockedBlocks && (
-            <div className="bg-stone-50 border border-stone-100 rounded-xl p-3 space-y-1.5">
-              <div className="flex items-center gap-1.5 text-[10px] font-semibold text-stone-400 uppercase tracking-wider">
+            <div className="bg-[var(--surface-3)] border border-[var(--border)] rounded-md p-3 space-y-1.5">
+              <div className="flex items-center gap-1.5 text-[10px] font-medium text-[var(--chrome-4)] uppercase tracking-wider">
                 <LockIcon />
                 Auto-assembled blocks
               </div>
               <div className="grid grid-cols-2 gap-1">
                 {activeBlocks.filter(b => !b.is_editable).map(block => (
                   <div key={block.block_number} className="flex items-center gap-1.5">
-                    <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${BLOCK_DOT_COLOURS[block.block_number] ?? 'bg-stone-300'}`} />
-                    <span className="text-[10px] text-stone-500">{block.label}</span>
+                    <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${BLOCK_DOT_COLOURS[block.block_number] ?? 'bg-[var(--chrome-5)]'}`} />
+                    <span className="text-[10px] text-[var(--chrome-4)]">{block.label}</span>
                   </div>
                 ))}
               </div>
@@ -661,13 +661,13 @@ export function PromptBuilder({
 
           {/* Full prompt preview (collapsed) */}
           <details className="group">
-            <summary className="text-xs text-stone-400 hover:text-stone-600 cursor-pointer select-none flex items-center gap-1.5 py-0.5">
+            <summary className="text-xs text-[var(--chrome-4)] hover:text-[var(--chrome-2)] cursor-pointer select-none flex items-center gap-1.5 py-0.5">
               <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="transition-transform group-open:rotate-90">
                 <path d="M9 18l6-6-6-6"/>
               </svg>
               Full assembled prompt
             </summary>
-            <div className="mt-2 p-3 bg-white border border-stone-200 rounded-xl text-[10px] text-stone-500 font-mono whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto">
+            <div className="mt-2 p-3 bg-[var(--surface)] border border-[var(--border)] rounded-md text-[10px] text-[var(--chrome-4)] font-mono whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto">
               {assembled.final_prompt}
             </div>
           </details>
