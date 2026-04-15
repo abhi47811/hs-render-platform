@@ -42,6 +42,15 @@ export function ReviewClient({ projectId, roomId, allRenders }: ReviewClientProp
     [allRenders]
   );
 
+  // Count distinct pass numbers that have at least one approved render
+  // Used to auto-verify cp3_allpasses checklist item when all 6 passes are done
+  const approvedPassCount = useMemo(() => {
+    const passNums = new Set(
+      approvedRenders.map(r => r.pass_number)
+    );
+    return passNums.size;
+  }, [approvedRenders]);
+
   const lightboxRenders: LightboxRender[] = allRenders.map(r => ({
     id: r.id,
     storage_url: r.storage_url,
@@ -140,6 +149,7 @@ export function ReviewClient({ projectId, roomId, allRenders }: ReviewClientProp
             checkpointNumber={3}
             clientName={project.client_name ?? null}
             roomName={room.room_name}
+            approvedPassCount={approvedPassCount}
           />
         </div>
       )}

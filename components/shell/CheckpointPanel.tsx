@@ -37,6 +37,11 @@ interface CheckpointPanelProps {
   // A3: WhatsApp one-click — client + room identity for message templates
   clientName?: string | null
   roomName?: string | null
+  /**
+   * CP3 only: number of distinct staging passes that have at least one team-approved render.
+   * When this equals 6 (all passes complete), cp3_allpasses is auto-verified in the checklist.
+   */
+  approvedPassCount?: number
 }
 
 const CP_META: Record<1 | 2 | 3, { title: string; desc: string; readyAction: string; approveAction: string }> = {
@@ -77,6 +82,7 @@ export function CheckpointPanel({
   vaultMeta,
   clientName,
   roomName,
+  approvedPassCount,
 }: CheckpointPanelProps) {
   const router = useRouter()
   const supabase = createClient()
@@ -294,6 +300,10 @@ export function CheckpointPanel({
           <QualityChecklist
             checkpointType={checkpointNumber as CheckpointType}
             onAllChecked={setChecklistAllDone}
+            autoVerified={checkpointNumber === 3 ? {
+              // Auto-verify "all passes complete" when all 6 staging passes have team-approved renders
+              cp3_allpasses: (approvedPassCount ?? 0) >= 6,
+            } : undefined}
           />
         )}
 

@@ -173,12 +173,17 @@ export function GenerateButton({
     setSuccess(false);
     setFailureType(null);
 
+    // Abort controller — cancel the request after 120s to avoid infinite loading
+    const abortController = new AbortController();
+    const timeoutId = setTimeout(() => abortController.abort(), 120_000);
+
     try {
       const response = await fetch('/api/staging/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        signal: abortController.signal,
         body: JSON.stringify({
           room_id: roomId,
           project_id: projectId,
@@ -190,6 +195,7 @@ export function GenerateButton({
           variation_count: variationCount,
         }),
       });
+      clearTimeout(timeoutId);
 
       const data = (await response.json()) as GenerateResponse;
 
@@ -208,11 +214,15 @@ export function GenerateButton({
         onComplete();
       }, 1500);
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'Unknown error occurred';
+      clearTimeout(timeoutId);
+      // Distinguish AbortError (our 120s timeout) from other errors
+      const isTimeout = err instanceof Error && err.name === 'AbortError';
+      const errorMessage = isTimeout
+        ? 'Request timed out after 120 seconds. The generation may still be processing — check the renders gallery or try again.'
+        : err instanceof Error ? err.message : 'Unknown error occurred';
       setError(errorMessage);
       // Sec 31: detect and set failure type for recovery panel
-      const detected = detectFailureType(errorMessage);
+      const detected = detectFailureType(isTimeout ? 'timeout' : errorMessage);
       setFailureType(detected);
       setRetryCount(c => c + 1);
       console.error('Generation error:', err);

@@ -66,12 +66,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
-    // Sec 32: If another generation is already processing for this project,
-    // queue this request rather than firing immediately.
+    // Sec 32: If another generation is already processing for this exact
+    // room + pass combination, queue this request rather than double-firing.
+    // (Previously was project-scoped only — now room+pass scoped to allow
+    // concurrent passes across different rooms in the same project.)
     const { data: activeJobs } = await supabase
       .from('generation_queue')
       .select('id')
-      .eq('project_id', project_id)
+      .eq('room_id', room_id)
+      .eq('pass_number', pass_number)
       .eq('status', 'processing')
       .limit(1)
 

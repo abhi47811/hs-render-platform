@@ -2,6 +2,32 @@ import { createClient } from '@/lib/supabase/server'
 import { isShareLinkValid } from '@/lib/share'
 import { NextRequest, NextResponse } from 'next/server'
 
+const SUPABASE_FUNCTIONS_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+function notifyClientRevision(
+  projectId: string,
+  roomId: string,
+  revisionNumber: number,
+  brief: string,
+) {
+  if (!SUPABASE_FUNCTIONS_URL || !SUPABASE_SERVICE_KEY) return
+  fetch(`${SUPABASE_FUNCTIONS_URL}/functions/v1/send-notification`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+    },
+    body: JSON.stringify({
+      project_id: projectId,
+      room_id: roomId,
+      notification_type: 'client_revision',
+      title: `Client requested changes (Revision ${revisionNumber})`,
+      message: brief.length > 120 ? brief.slice(0, 117) + '…' : brief,
+    }),
+  }).catch(err => console.warn('[share/revision] notification failed:', err))
+}
+
 /**
  * POST /api/share/revision
  * Public endpoint (no auth required, validated by token)
@@ -86,6 +112,9 @@ export async function POST(request: NextRequest) {
     if (projectError) {
       throw new Error(`Failed to update project status: ${projectError.message}`)
     }
+
+    // Notify team that client requested revisions (fire-and-forget)
+    notifyClientRevision(project_id, room_id, nextRevisionNumber, brief)
 
     return NextResponse.json({ success: true }, { status: 201 })
   } catch (error) {

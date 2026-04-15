@@ -63,6 +63,12 @@ interface QualityChecklistProps {
   onAllChecked: (allDone: boolean) => void;
   /** Optional: reset key — when this changes, all checkboxes reset */
   resetKey?: string | number;
+  /**
+   * Optional: map of item IDs that are automatically verified by the system
+   * (pre-checked and locked — user cannot uncheck them).
+   * E.g. { cp3_allpasses: true } when all 6 passes have team-approved renders.
+   */
+  autoVerified?: Partial<Record<string, boolean>>;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -70,24 +76,31 @@ export function QualityChecklist({
   checkpointType,
   onAllChecked,
   resetKey,
+  autoVerified = {},
 }: QualityChecklistProps) {
   const items = CHECKLISTS[checkpointType] ?? [];
   const [checked, setChecked] = useState<Record<string, boolean>>({});
 
-  // Reset when resetKey changes (e.g. new render generated)
+  // Reset manual checks when resetKey changes (auto-verified items persist via prop)
   useEffect(() => {
     setChecked({});
-    onAllChecked(false);
+    // Re-evaluate allDone with only auto-verified items after reset
+    const autoCount = items.filter(i => autoVerified[i.id]).length;
+    onAllChecked(autoCount === items.length);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resetKey]);
 
-  const checkedCount = Object.values(checked).filter(Boolean).length;
+  // Merge manual + auto-verified to compute totals
+  const effectiveChecked = (id: string) => !!autoVerified[id] || !!checked[id];
+  const checkedCount = items.filter(i => effectiveChecked(i.id)).length;
   const allDone = checkedCount === items.length;
 
   const handleToggle = (id: string) => {
+    // Auto-verified items cannot be manually toggled
+    if (autoVerified[id]) return;
     const next = { ...checked, [id]: !checked[id] };
     setChecked(next);
-    const done = Object.values(next).filter(Boolean).length === items.length;
+    const done = items.filter(i => !!autoVerified[i.id] || !!next[i.id]).length === items.length;
     onAllChecked(done);
   };
 
@@ -126,37 +139,49 @@ export function QualityChecklist({
 
       {/* Checklist items */}
       <div className="p-4 space-y-3">
-        {items.map(item => (
-          <label
-            key={item.id}
-            className="flex items-start gap-3 cursor-pointer group"
-          >
-            <div className={`
-              w-4 h-4 flex-shrink-0 mt-0.5 rounded border-2 flex items-center justify-center transition-colors
-              ${checked[item.id]
-                ? 'bg-stone-900 border-stone-900'
-                : 'bg-white border-stone-300 group-hover:border-stone-500'
-              }
-            `}>
-              {checked[item.id] && (
-                <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M20 6L9 17l-5-5"/>
-                </svg>
+        {items.map(item => {
+          const isAuto = !!autoVerified[item.id];
+          const isChecked = effectiveChecked(item.id);
+          return (
+            <label
+              key={item.id}
+              className={`flex items-start gap-3 ${isAuto ? 'cursor-default' : 'cursor-pointer group'}`}
+            >
+              <div className={`
+                w-4 h-4 flex-shrink-0 mt-0.5 rounded border-2 flex items-center justify-center transition-colors
+                ${isChecked
+                  ? isAuto
+                    ? 'bg-emerald-600 border-emerald-600'
+                    : 'bg-stone-900 border-stone-900'
+                  : 'bg-white border-stone-300 group-hover:border-stone-500'
+                }
+              `}>
+                {isChecked && (
+                  <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20 6L9 17l-5-5"/>
+                  </svg>
+                )}
+                <input
+                  type="checkbox"
+                  className="sr-only"
+                  checked={isChecked}
+                  onChange={() => handleToggle(item.id)}
+                  disabled={isAuto}
+                />
+              </div>
+              <span className={`text-xs leading-snug transition-colors flex-1 ${
+                isChecked ? 'text-stone-400 line-through' : 'text-stone-700 group-hover:text-stone-900'
+              }`}>
+                {item.label}
+              </span>
+              {isAuto && (
+                <span className="text-[9px] font-semibold text-emerald-600 bg-emerald-50 border border-emerald-200 rounded px-1.5 py-0.5 flex-shrink-0 mt-0.5">
+                  Auto
+                </span>
               )}
-              <input
-                type="checkbox"
-                className="sr-only"
-                checked={!!checked[item.id]}
-                onChange={() => handleToggle(item.id)}
-              />
-            </div>
-            <span className={`text-xs leading-snug transition-colors ${
-              checked[item.id] ? 'text-stone-400 line-through' : 'text-stone-700 group-hover:text-stone-900'
-            }`}>
-              {item.label}
-            </span>
-          </label>
-        ))}
+            </label>
+          );
+        })}
       </div>
 
       {/* Footer gate message */}
