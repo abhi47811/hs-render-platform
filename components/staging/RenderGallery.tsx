@@ -72,9 +72,11 @@ interface RenderCardProps {
   onApprove?: () => void;
   onReject?: () => void;
   onFlagsUpdated: (renderId: string, flags: ArtifactFlag[]) => void;
+  /** When true, this card is the only one in its row — use taller image height */
+  fullWidth?: boolean;
 }
 
-function RenderCard({ render, flags, shellUrl, onApprove, onReject, onFlagsUpdated }: RenderCardProps) {
+function RenderCard({ render, flags, shellUrl, onApprove, onReject, onFlagsUpdated, fullWidth }: RenderCardProps) {
   const [overrideUnlocked, setOverrideUnlocked] = useState(false);
   const [showComparison, setShowComparison] = useState(false);
   const statusConfig = STATUS_CONFIG[render.status] ?? STATUS_CONFIG.generated;
@@ -102,7 +104,7 @@ function RenderCard({ render, flags, shellUrl, onApprove, onReject, onFlagsUpdat
           />
         </div>
       ) : (
-        <div className="relative w-full h-52 bg-[var(--surface-3)]">
+        <div className={`relative w-full bg-[var(--surface-3)] ${fullWidth ? 'h-80' : 'h-52'}`}>
           {render.storage_url ? (
             <Image
               src={render.storage_url}
@@ -269,7 +271,7 @@ export function RenderGallery({ renders, onApprove, onReject, shellUrl, onDouble
               <span className="text-[10px] text-[var(--chrome-4)]">{group.items.length} render{group.items.length !== 1 ? 's' : ''}</span>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <div className={`grid gap-4 ${group.items.length === 1 ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-2'}`}>
               {group.items.map(render => (
                 <div key={render.id} onDoubleClick={() => onDoubleClick?.(render.id)}>
                   <RenderCard
@@ -279,6 +281,7 @@ export function RenderGallery({ renders, onApprove, onReject, shellUrl, onDouble
                     onApprove={onApprove ? () => onApprove(render.id) : undefined}
                     onReject={onReject ? () => onReject(render.id) : undefined}
                     onFlagsUpdated={handleFlagsUpdated}
+                    fullWidth={group.items.length === 1}
                   />
                 </div>
               ))}
