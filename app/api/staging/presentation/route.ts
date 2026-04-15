@@ -215,6 +215,14 @@ export async function POST(request: NextRequest) {
 
     const html = buildHtml(project, rooms ?? [], renders ?? [], opts)
 
+    // Safe ASCII filename — strip non-ASCII chars (e.g. em dash) that cause
+    // ERR_INVALID_CHAR when Node.js serialises the Content-Disposition header
+    const safeFilename = (project.client_name as string)
+      .replace(/[^a-zA-Z0-9\s]/g, '')  // remove non-alphanumeric / non-space
+      .trim()
+      .replace(/\s+/g, '-')             // spaces → hyphens
+      || 'presentation'
+
     // Try Puppeteer
     try {
       const puppeteer = await import('puppeteer')
@@ -236,7 +244,7 @@ export async function POST(request: NextRequest) {
       return new NextResponse(pdfBuffer as unknown as BodyInit, {
         headers: {
           'Content-Type': 'application/pdf',
-          'Content-Disposition': `attachment; filename="${project.client_name.replace(/\s+/g, '-')}-presentation.pdf"`,
+          'Content-Disposition': `attachment; filename="${safeFilename}-presentation.pdf"`,
         },
       })
     } catch (puppeteerErr) {
@@ -246,7 +254,7 @@ export async function POST(request: NextRequest) {
       return new NextResponse(html, {
         headers: {
           'Content-Type': 'text/html',
-          'Content-Disposition': `attachment; filename="${project.client_name.replace(/\s+/g, '-')}-presentation.html"`,
+          'Content-Disposition': `attachment; filename="${safeFilename}-presentation.html"`,
           'X-Fallback': 'true',
         },
       })
