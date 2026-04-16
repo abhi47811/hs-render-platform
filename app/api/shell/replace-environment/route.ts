@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 
 export type EnvironmentPreset =
   | 'city'
@@ -82,7 +82,7 @@ async function fetchImageAsBase64(url: string): Promise<string> {
 }
 
 async function uploadEnhancedShell(
-  supabase: ReturnType<typeof createClient>,
+  supabase: ReturnType<typeof createSupabaseClient>,
   projectId: string,
   roomId: string,
   imageBase64: string
@@ -105,7 +105,6 @@ async function uploadEnhancedShell(
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createClient()
     const body = (await request.json()) as ReplaceRequest
     const { room_id, project_id, shell_url, preset, custom_prompt, city, project_type } = body
 
@@ -117,6 +116,15 @@ export async function POST(request: NextRequest) {
     if (!geminiKey) {
       return NextResponse.json({ error: 'GEMINI_API_KEY not configured' }, { status: 500 })
     }
+
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    if (!supabaseUrl || !supabaseServiceKey) {
+      return NextResponse.json({ error: 'Supabase configuration missing' }, { status: 500 })
+    }
+
+    // Use service role client — bypasses RLS for server-side storage uploads and DB writes
+    const supabase = createSupabaseClient(supabaseUrl, supabaseServiceKey)
 
     // Fetch original shell as base64
     const shellBase64 = await fetchImageAsBase64(shell_url)
