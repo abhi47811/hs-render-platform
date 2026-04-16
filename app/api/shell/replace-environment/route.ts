@@ -56,14 +56,19 @@ function buildEnvironmentPrompt(
 
   return `You are an expert interior photography retoucher. I am giving you a reference interior room photograph.
 
-Your task: Keep the entire interior of this room EXACTLY as it appears — all walls, flooring, ceiling, furniture, fixtures, lighting, and all interior surfaces must remain completely unchanged.
+CRITICAL RULE: If there are NO windows, glass panels, or outdoor-facing openings visible in this photograph, return the image COMPLETELY UNCHANGED. Do NOT add any windows, doors, openings, or architectural elements that do not exist in the original image.
 
-ONLY modify what is visible through windows, glass doors, balcony openings, or any outdoor-facing transparent surfaces. Replace the current outdoor view with: ${envDescription}.
+If and ONLY IF windows or outdoor openings ARE already present: replace the outdoor view visible through them with: ${envDescription}.
+
+Your task: Keep the entire interior of this room EXACTLY as it appears — all walls, flooring, ceiling, furniture, fixtures, lighting, and ALL interior surfaces must remain COMPLETELY UNCHANGED. Do NOT alter wall positions, room structure, or add any new architectural features.
 
 Requirements:
+- NEVER add windows, openings, or structural elements that did not exist in the reference photo
+- NEVER change wall colors, textures, or positions
 - The indoor environment must look 100% identical to the reference image
+- Only the outdoor view seen THROUGH EXISTING openings may change
 - The new outdoor view must look photorealistic and consistent with the interior lighting
-- Blend the outdoor light naturally through the windows to maintain realistic interior illumination
+- Blend the outdoor light naturally through existing windows to maintain realistic interior illumination
 - The image should look like a professional interior photograph, not a composite
 - Maintain the same camera angle, perspective, and composition as the reference
 - Output as a high-quality interior room photograph`

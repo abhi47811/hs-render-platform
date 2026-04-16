@@ -256,7 +256,7 @@ export function CheckpointPanel({
   }[status]
 
   return (
-    <div className="bg-white rounded-xl border border-stone-200 overflow-hidden">
+    <div className="bg-white rounded-xl border border-stone-200">
       {/* Header */}
       <div className="px-5 py-4 border-b border-stone-100 flex items-center justify-between">
         <div className="flex items-center gap-3">
