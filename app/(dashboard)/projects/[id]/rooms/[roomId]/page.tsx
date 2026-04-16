@@ -12,6 +12,7 @@ import { FloorPlanUpload } from '@/components/shell/FloorPlanUpload'
 import { ColourPalette } from '@/components/staging/ColourPalette'
 import { TeamComments } from '@/components/comments/TeamComments'
 import { RoomStatusControl } from '@/components/project/RoomStatusControl'
+import { ResetShellControls } from '@/components/shell/ResetShellControls'
 
 export const dynamic = 'force-dynamic'
 
@@ -102,7 +103,14 @@ export default async function RoomPage({ params }: RoomPageProps) {
           {/* Breadcrumb row */}
           <div className="flex items-center justify-between py-3 border-b border-stone-100">
             <nav className="flex items-center gap-2 text-xs text-stone-400">
-              <Link href="/" className="hover:text-stone-700 transition-colors cursor-pointer">Pipeline</Link>
+              {/* Back arrow to project page */}
+              <Link
+                href={`/projects/${params.id}`}
+                className="inline-flex items-center gap-1 text-stone-400 hover:text-stone-700 transition-colors cursor-pointer"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+                <span>Pipeline</span>
+              </Link>
               <span className="text-stone-300">/</span>
               <Link href={`/projects/${params.id}`} className="hover:text-stone-700 transition-colors font-medium text-stone-600 cursor-pointer">
                 {project.client_name}
@@ -163,7 +171,7 @@ export default async function RoomPage({ params }: RoomPageProps) {
 
             {/* Shell card */}
             <div className="bg-white rounded-xl border border-stone-200 overflow-hidden">
-              <div className="px-5 py-4 border-b border-stone-100 flex items-center justify-between">
+              <div className="px-5 py-4 border-b border-stone-100 flex items-center justify-between gap-3">
                 <div>
                   <h2 className="text-sm font-semibold text-stone-800">Room Shell</h2>
                   <p className="text-xs text-stone-400 mt-0.5">
@@ -176,19 +184,36 @@ export default async function RoomPage({ params }: RoomPageProps) {
                       : 'Shell ready for staging'}
                   </p>
                 </div>
-                {room.enhanced_shell_url ? (
-                  <span className="text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
-                    Shell Ready
-                  </span>
-                ) : room.photorealistic_shell_url ? (
-                  <span className="text-xs font-medium text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
-                    Environment Pending
-                  </span>
-                ) : room.original_shell_url ? (
-                  <span className="text-xs font-medium text-stone-600 bg-stone-100 border border-stone-200 px-2 py-0.5 rounded-full">
-                    Enhancement Pending
-                  </span>
-                ) : null}
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {/* Redo buttons — shown once enhanced_shell_url exists (Shell Approval step) */}
+                  {room.enhanced_shell_url && (
+                    <ResetShellControls
+                      roomId={params.roomId}
+                      showRedoEnvironment={true}
+                      showRedoEnhancement={true}
+                    />
+                  )}
+                  {/* Redo Enhancement — shown when photorealistic exists but no enhanced yet (Environment step) */}
+                  {room.photorealistic_shell_url && !room.enhanced_shell_url && (
+                    <ResetShellControls
+                      roomId={params.roomId}
+                      showRedoEnhancement={true}
+                    />
+                  )}
+                  {room.enhanced_shell_url ? (
+                    <span className="text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                      Shell Ready
+                    </span>
+                  ) : room.photorealistic_shell_url ? (
+                    <span className="text-xs font-medium text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
+                      Environment Pending
+                    </span>
+                  ) : room.original_shell_url ? (
+                    <span className="text-xs font-medium text-stone-600 bg-stone-100 border border-stone-200 px-2 py-0.5 rounded-full">
+                      Enhancement Pending
+                    </span>
+                  ) : null}
+                </div>
               </div>
               <div className="p-5">
                 {!room.original_shell_url ? (
