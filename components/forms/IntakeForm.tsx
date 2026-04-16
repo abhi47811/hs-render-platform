@@ -276,13 +276,19 @@ export function IntakeForm({ teamMembers }: IntakeFormProps) {
 
   const labelClass = 'block text-xs font-medium text-stone-600 mb-1.5'
   const errorClass = 'text-xs text-red-500 mt-1.5 flex items-center gap-1'
-  const sectionClass = 'bg-white rounded-xl border border-stone-200 p-6'
-  const sectionTitle = 'text-sm font-semibold text-stone-800 mb-5'
+  const sectionClass = 'bg-white rounded-xl border border-stone-200 p-5'
+  const sectionTitle = 'text-sm font-semibold text-stone-800 mb-4'
 
   // ─── Render ────────────────────────────────────────────────────────────
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+    <form onSubmit={handleSubmit(onSubmit)} noValidate>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+
+      {/* ══════════════════════════════════════════════
+          LEFT COLUMN — core intake fields
+      ══════════════════════════════════════════════ */}
+      <div className="space-y-4">
 
       {/* ── Client Details ── */}
       <div className={sectionClass}>
@@ -450,6 +456,112 @@ export function IntakeForm({ teamMembers }: IntakeFormProps) {
         </div>
       </div>
 
+      {/* ── Rooms ── */}
+      <div className={sectionClass}>
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-sm font-semibold text-stone-800">Rooms *</p>
+          <button
+            type="button"
+            onClick={() => append({ room_name: '', room_type: undefined as never })}
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-stone-600 hover:text-stone-900 border border-stone-200 hover:border-stone-400 rounded-lg px-3 py-2 min-h-[36px] transition-colors cursor-pointer"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M5 12h14"/><path d="M12 5v14"/>
+            </svg>
+            Add Room
+          </button>
+        </div>
+
+        {errors.rooms && !Array.isArray(errors.rooms) && (
+          <p className={errorClass + ' mb-4'}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            {errors.rooms.message}
+          </p>
+        )}
+
+        <div className="space-y-3">
+          {fields.map((field, idx) => (
+            <div key={field.id} className="rounded-xl border border-stone-100 bg-stone-50 p-4">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-semibold text-stone-500 uppercase tracking-wider">Room {idx + 1}</span>
+                {fields.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => remove(idx)}
+                    className="text-xs text-red-400 hover:text-red-600 transition-colors font-medium min-h-[32px] px-2 cursor-pointer"
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className={labelClass}>Room Name *</label>
+                  <input
+                    {...register(`rooms.${idx}.room_name`)}
+                    placeholder="e.g. Master Bedroom"
+                    className={inputClass(!!(errors.rooms?.[idx]?.room_name))}
+                  />
+                  {errors.rooms?.[idx]?.room_name && (
+                    <p className={errorClass}>{errors.rooms[idx]?.room_name?.message}</p>
+                  )}
+                </div>
+                <div>
+                  <label className={labelClass}>Room Type *</label>
+                  <SelectField hasError={!!(errors.rooms?.[idx]?.room_type)}>
+                    <select
+                      {...register(`rooms.${idx}.room_type`)}
+                      className={selectClass(!!(errors.rooms?.[idx]?.room_type))}
+                    >
+                      <option value="">Select type</option>
+                      {ROOM_TYPES.map((r) => <option key={r} value={r}>{r}</option>)}
+                    </select>
+                  </SelectField>
+                  {errors.rooms?.[idx]?.room_type && (
+                    <p className={errorClass}>{errors.rooms[idx]?.room_type?.message}</p>
+                  )}
+                </div>
+              </div>
+              <div className="mt-3">
+                <label className={labelClass}>
+                  Dimensions <span className="text-stone-400 font-normal">(optional · in feet)</span>
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {(['dimensions_l', 'dimensions_w', 'dimensions_h'] as const).map((dim, di) => (
+                    <div key={dim} className="relative">
+                      <input
+                        {...register(`rooms.${idx}.${dim}`)}
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        placeholder={['L', 'W', 'H'][di]}
+                        inputMode="decimal"
+                        className={inputClass(!!(errors.rooms?.[idx]?.[dim]))}
+                      />
+                      <span className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center text-[10px] text-stone-300 font-medium">
+                        {['L', 'W', 'H'][di]}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                {(['dimensions_l', 'dimensions_w', 'dimensions_h'] as const).some(
+                  (dim) => errors.rooms?.[idx]?.[dim]
+                ) && (
+                  <p className={errorClass}>All dimensions must be positive numbers</p>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      </div>{/* end left column */}
+
+      {/* ══════════════════════════════════════════════
+          RIGHT COLUMN — preferences, refs, vastu, submit
+      ══════════════════════════════════════════════ */}
+      <div className="space-y-4">
+
       {/* ── Client Preferences ── */}
       <div className={sectionClass}>
         <p className={sectionTitle}>
@@ -563,107 +675,6 @@ export function IntakeForm({ teamMembers }: IntakeFormProps) {
         )}
       </div>
 
-      {/* ── Rooms ── */}
-      <div className={sectionClass}>
-        <div className="flex items-center justify-between mb-5">
-          <p className="text-sm font-semibold text-stone-800">Rooms *</p>
-          <button
-            type="button"
-            onClick={() => append({ room_name: '', room_type: undefined as never })}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-stone-600 hover:text-stone-900 border border-stone-200 hover:border-stone-400 rounded-lg px-3 py-2 min-h-[36px] transition-colors cursor-pointer"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M5 12h14"/><path d="M12 5v14"/>
-            </svg>
-            Add Room
-          </button>
-        </div>
-
-        {errors.rooms && !Array.isArray(errors.rooms) && (
-          <p className={errorClass + ' mb-4'}>
-            <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            {errors.rooms.message}
-          </p>
-        )}
-
-        <div className="space-y-3">
-          {fields.map((field, idx) => (
-            <div key={field.id} className="rounded-xl border border-stone-100 bg-stone-50 p-4">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-semibold text-stone-500 uppercase tracking-wider">Room {idx + 1}</span>
-                {fields.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => remove(idx)}
-                    className="text-xs text-red-400 hover:text-red-600 transition-colors font-medium min-h-[32px] px-2 cursor-pointer"
-                  >
-                    Remove
-                  </button>
-                )}
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className={labelClass}>Room Name *</label>
-                  <input
-                    {...register(`rooms.${idx}.room_name`)}
-                    placeholder="e.g. Master Bedroom"
-                    className={inputClass(!!(errors.rooms?.[idx]?.room_name))}
-                  />
-                  {errors.rooms?.[idx]?.room_name && (
-                    <p className={errorClass}>{errors.rooms[idx]?.room_name?.message}</p>
-                  )}
-                </div>
-                <div>
-                  <label className={labelClass}>Room Type *</label>
-                  <SelectField hasError={!!(errors.rooms?.[idx]?.room_type)}>
-                    <select
-                      {...register(`rooms.${idx}.room_type`)}
-                      className={selectClass(!!(errors.rooms?.[idx]?.room_type))}
-                    >
-                      <option value="">Select type</option>
-                      {ROOM_TYPES.map((r) => <option key={r} value={r}>{r}</option>)}
-                    </select>
-                  </SelectField>
-                  {errors.rooms?.[idx]?.room_type && (
-                    <p className={errorClass}>{errors.rooms[idx]?.room_type?.message}</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Dimensions — optional, in feet */}
-              <div className="mt-3">
-                <label className={labelClass}>
-                  Dimensions <span className="text-stone-400 font-normal">(optional · in feet)</span>
-                </label>
-                <div className="grid grid-cols-3 gap-2">
-                  {(['dimensions_l', 'dimensions_w', 'dimensions_h'] as const).map((dim, di) => (
-                    <div key={dim} className="relative">
-                      <input
-                        {...register(`rooms.${idx}.${dim}`)}
-                        type="number"
-                        step="0.1"
-                        min="0"
-                        placeholder={['L', 'W', 'H'][di]}
-                        inputMode="decimal"
-                        className={inputClass(!!(errors.rooms?.[idx]?.[dim]))}
-                      />
-                      <span className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center text-[10px] text-stone-300 font-medium">
-                        {['L', 'W', 'H'][di]}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-                {(['dimensions_l', 'dimensions_w', 'dimensions_h'] as const).some(
-                  (dim) => errors.rooms?.[idx]?.[dim]
-                ) && (
-                  <p className={errorClass}>All dimensions must be positive numbers</p>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
       {/* ── Error banner ── */}
       {submitError && (
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 flex items-start gap-3">
@@ -673,9 +684,9 @@ export function IntakeForm({ teamMembers }: IntakeFormProps) {
       )}
 
       {/* ── Submit ── */}
-      <div className="flex items-center justify-between pt-1 pb-4">
+      <div className="bg-white rounded-xl border border-stone-200 p-5 flex items-center justify-between">
         <p className="text-xs text-stone-400">
-          SLA clock starts immediately — 72-hour delivery window
+          SLA clock starts immediately —<br />72-hour delivery window
         </p>
         <button
           type="submit"
@@ -698,6 +709,9 @@ export function IntakeForm({ teamMembers }: IntakeFormProps) {
           )}
         </button>
       </div>
+
+      </div>{/* end right column */}
+      </div>{/* end grid */}
     </form>
   )
 }

@@ -190,8 +190,14 @@ export function PassClient({ projectId, roomId, passNum, initialRenders }: PassC
   // Only relevant on pass 1
   const showCrossRoomBanner = passNum === 1 && !localSeedUrl;
 
+  // ── Gallery renders — only current pass (day_to_dusk + surface_swap live on deliver page) ──
+  const currentPassRenders = useMemo(() =>
+    renders.filter(r => r.pass_number === passNum),
+    [renders, passNum]
+  );
+
   // ── Lightbox renders ───────────────────────────────────────────────────────
-  const lightboxRenders: LightboxRender[] = renders.map(r => ({
+  const lightboxRenders: LightboxRender[] = currentPassRenders.map(r => ({
     id: r.id,
     storage_url: r.storage_url,
     pass_type: r.pass_type ?? 'main_furniture',
@@ -597,7 +603,7 @@ export function PassClient({ projectId, roomId, passNum, initialRenders }: PassC
           </div>
 
           <RenderGallery
-            renders={renders}
+            renders={currentPassRenders}
             onApprove={handleApprove}
             onReject={handleReject}
             shellUrl={enhancedShellUrl ?? (room as any).original_shell_url ?? null}
