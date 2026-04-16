@@ -54,24 +54,41 @@ function buildEnvironmentPrompt(
     envDescription = 'a pleasant outdoor view with natural light'
   }
 
-  return `You are an expert interior photography retoucher. I am giving you a reference interior room photograph.
+  return `You are an expert interior photography retoucher working on a bare shell room photograph.
 
-CRITICAL RULE: If there are NO windows, glass panels, or outdoor-facing openings visible in this photograph, return the image COMPLETELY UNCHANGED. Do NOT add any windows, doors, openings, or architectural elements that do not exist in the original image.
+══════════════════════════════════════════════════════════════════
+🚫 ABSOLUTE STRUCTURAL RULES — THESE OVERRIDE EVERYTHING ELSE
+══════════════════════════════════════════════════════════════════
 
-If and ONLY IF windows or outdoor openings ARE already present: replace the outdoor view visible through them with: ${envDescription}.
+RULE 1 — WINDOW COUNT IS LOCKED:
+Count every window and glass opening in this image BEFORE generating.
+The output MUST have EXACTLY that same number of windows — not one more, not one less.
+If the input has ZERO windows → output has ZERO windows. Do NOT add windows.
+ADDING A WINDOW IS AN ABSOLUTE FAILURE.
 
-Your task: Keep the entire interior of this room EXACTLY as it appears — all walls, flooring, ceiling, furniture, fixtures, lighting, and ALL interior surfaces must remain COMPLETELY UNCHANGED. Do NOT alter wall positions, room structure, or add any new architectural features.
+RULE 2 — NO STRUCTURAL CHANGES:
+Do NOT add, remove, resize, or move ANY window, door, arch, opening, or wall.
+Do NOT add balconies, glass panels, skylights, or any architectural element that is not already present.
+Every wall that is solid/blank in the input MUST remain solid/blank in the output.
 
-Requirements:
-- NEVER add windows, openings, or structural elements that did not exist in the reference photo
-- NEVER change wall colors, textures, or positions
-- The indoor environment must look 100% identical to the reference image
-- Only the outdoor view seen THROUGH EXISTING openings may change
-- The new outdoor view must look photorealistic and consistent with the interior lighting
-- Blend the outdoor light naturally through existing windows to maintain realistic interior illumination
-- The image should look like a professional interior photograph, not a composite
-- Maintain the same camera angle, perspective, and composition as the reference
-- Output as a high-quality interior room photograph`
+RULE 3 — PRESERVE THE ENTIRE INTERIOR:
+All walls, flooring, ceiling, surfaces, dimensions, and the camera angle must remain EXACTLY as in the reference.
+
+══════════════════════════════════════════════════════════════════
+✅ THE ONLY CHANGE PERMITTED
+══════════════════════════════════════════════════════════════════
+
+If and ONLY IF windows or glass openings ARE already present in this photograph:
+Replace the outdoor view visible through those EXISTING openings with: ${envDescription}
+
+The new outdoor view must:
+- Look photorealistic and blend naturally with the interior lighting direction
+- Cast consistent directional light through the existing window openings
+- Look like a professional interior photograph — not a composite
+
+If there are NO windows in this photograph: return the image COMPLETELY UNCHANGED.
+
+OUTPUT: A photographic interior image. The room structure is IDENTICAL to the input. Only the outdoor view through EXISTING windows has changed.`
 }
 
 async function fetchImageAsBase64(url: string): Promise<string> {

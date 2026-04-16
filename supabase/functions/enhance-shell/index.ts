@@ -39,63 +39,66 @@ interface EnhanceShellRequest {
 // ─── PROMPT: Shell-only photorealism ─────────────────────────────────────────
 const SHELL_ONLY_PROMPT = `YOU ARE PERFORMING A PHOTOREALISM TREATMENT — NOT AN INTERIOR DESIGN TASK.
 
-⚠️ CRITICAL CONSTRAINT — READ THIS FIRST:
-This is a BARE SHELL room. It is INTENTIONALLY EMPTY.
-DO NOT add any furniture.
-DO NOT add any decor objects.
-DO NOT add any rugs, curtains, lamps, plants, cushions, or any objects whatsoever.
-DO NOT add anything that was not already present in the input image.
-The room MUST remain 100% empty in the output — just walls, floor, ceiling, windows, and doors.
-If you add even one piece of furniture, the task has FAILED.
+══════════════════════════════════════════════════════════════════
+🚫 ABSOLUTE STRUCTURAL RULES — THESE OVERRIDE EVERYTHING ELSE
+══════════════════════════════════════════════════════════════════
 
-⚠️ STRUCTURAL PRESERVATION — ABSOLUTE RULE:
-DO NOT add new windows. DO NOT remove existing windows.
-DO NOT add new doors. DO NOT remove existing doors.
-DO NOT add new openings, arches, or passages of ANY kind.
-DO NOT change the size, shape, or position of any window or door.
-Count the windows in the input image — the output MUST have the EXACT SAME NUMBER of windows.
-Count the doors in the input image — the output MUST have the EXACT SAME NUMBER of doors.
-If the input has ONE window, the output must have EXACTLY ONE window. Not two. Not zero.
-Changing the room's architectural structure is a CRITICAL FAILURE.
+RULE 1 — WINDOW COUNT IS LOCKED:
+Before generating, count every window and glass opening visible in the input image.
+The output MUST have EXACTLY that number of windows — not one more, not one less.
+If the input has ZERO windows → the output has ZERO windows. No windows. None.
+If the input has ONE window → the output has EXACTLY ONE window.
+If the input has TWO windows → the output has EXACTLY TWO windows.
+ADDING A WINDOW IS AN ABSOLUTE FAILURE OF THIS TASK.
 
-WHAT THIS TASK IS:
-You are an architectural visualization renderer. I am giving you a 3D render from Coohom interior design software. Your only job is to apply photorealistic visual treatment to the existing surfaces and lighting — nothing else. The room content (empty space) must be IDENTICAL before and after. Only the visual quality of the surfaces and lighting changes.
+RULE 2 — DOOR COUNT IS LOCKED:
+Count every door in the input. The output must have the EXACT SAME NUMBER of doors.
 
-WHAT STAYS EXACTLY THE SAME (do not change any of these):
-- The room is completely empty — no furniture, no objects (THIS DOES NOT CHANGE)
-- Room layout, wall positions, ceiling height, floor area
-- EXACT number, location, and size of every window (DO NOT ADD OR REMOVE WINDOWS)
-- EXACT number, location, and size of every door (DO NOT ADD OR REMOVE DOORS)
-- Camera angle, perspective, and composition
+RULE 3 — NO NEW OPENINGS OF ANY KIND:
+Do NOT add arches, glass panels, skylights, balcony openings, or any architectural opening
+that does not exist in the input image.
 
-WHAT YOU MUST IMPROVE (surfaces and lighting only):
+RULE 4 — NO FURNITURE OR OBJECTS:
+The room is INTENTIONALLY EMPTY. Do NOT add furniture, decor, rugs, curtains, plants, or ANY object.
 
-1. LIGHTING — Replace the flat CG lighting with natural photographic lighting:
-   - Bright directional sunlight through windows with visible light shafts
+RULE 5 — PRESERVE WALL STRUCTURE:
+Do NOT alter wall positions, remove walls, widen openings, or change any structural element.
+If a wall is solid/blank in the input, it must remain solid/blank in the output.
+
+══════════════════════════════════════════════════════════════════
+✅ WHAT THIS TASK IS
+══════════════════════════════════════════════════════════════════
+
+You are an architectural visualization renderer. I am giving you a 3D render from Coohom interior design software. Your ONLY job is to apply photorealistic visual treatment to the existing surfaces and lighting. The room structure must be IDENTICAL before and after. Only the visual quality of surfaces and lighting changes.
+
+WHAT YOU MUST IMPROVE (surfaces and lighting ONLY — do NOT change structure):
+
+1. LIGHTING — Replace flat CG lighting with natural photographic lighting:
+   - Bright directional sunlight through existing windows with visible light shafts
    - Realistic caustics and light scatter on walls and floor
    - Strong contrast between sunlit areas and shadows
    - Warm colour temperature on sunlit surfaces, cool ambient fill in shadows
    - Window frames casting sharp rectangular shadow patterns on floor and walls
 
-2. SURFACE TEXTURES — Replace plastic-looking CG surfaces with real material textures:
+2. SURFACE TEXTURES — Replace plastic-looking CG surfaces:
    - Walls: visible paint texture, subtle roller marks, slight sheen variation
    - Floor: clear tile grout lines, specular reflections, surface grain
    - Ceiling: plaster texture, slight paint colour variation
 
-3. AMBIENT OCCLUSION — Pronounced contact shadows on all joins:
+3. AMBIENT OCCLUSION — Pronounced contact shadows:
    - Dark shadow gradient at every wall-floor junction
-   - Shadow accumulation in corners where walls meet the ceiling and floor
+   - Shadow accumulation in room corners
    - Darkening under window sills, above door frames
 
 4. DEPTH OF FIELD — Wide-angle architectural lens:
-   - Foreground slightly sharper, background elements have natural softness
+   - Foreground slightly sharper, background has natural softness
    - Subtle lens vignetting at corners
 
 5. ATMOSPHERE — Real space feel:
-   - Faint dust particles visible in window light beams
+   - Faint dust particles in window light beams
    - Natural surface imperfections: tiny wall scuffs, slight colour variation
 
-OUTPUT: A photographic image that looks like a professional architectural photographer shot an empty room with a DSLR camera. The room IS EMPTY. There is NO furniture. Only the photorealistic quality of the surfaces and lighting is different from the input.`;
+OUTPUT: A photographic image that looks like a professional architectural photographer shot an empty room with a DSLR camera. The room IS EMPTY. There is NO furniture. The window count is IDENTICAL to the input. Only the photorealistic quality of surfaces and lighting differs from the input.`;
 
 // ─── PROMPT: Combined shell enhancement + staging ────────────────────────────
 const buildCombinedPrompt = (env: EnvironmentConfig): string => `You are a world-class architectural visualization and interior design artist. I am giving you a 3D render from interior design software (Coohom). Your job is to transform this render into a FULLY STYLED, PHOTOREALISTIC interior photograph — completely indistinguishable from a real photograph of a real designed room.
