@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -47,17 +47,21 @@ Rules:
 - Be specific about wall references (e.g. "south wall with window" not just "wall")
 - Dimensions in feet only`
 
-async function fetchImageAsBase64(url: string): Promise<string> {
+async function fetchImageAsBase64(url: string): Promise<{ data: string; mimeType: string }> {
   const response = await fetch(url)
   if (!response.ok) throw new Error(`Failed to fetch floor plan image: ${response.status}`)
   const buffer = await response.arrayBuffer()
+  const contentType = response.headers.get('content-type') ?? ''
+  const mimeType = contentType.includes('png') ? 'image/png'
+    : contentType.includes('webp') ? 'image/webp'
+    : 'image/jpeg'
   const bytes = new Uint8Array(buffer)
   let binary = ''
   const chunkSize = 8192
   for (let i = 0; i < bytes.byteLength; i += chunkSize) {
     binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize))
   }
-  return btoa(binary)
+  return { data: btoa(binary), mimeType }
 }
 
 export async function OPTIONS() {
@@ -85,7 +89,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch image as base64
-    const base64Image = await fetchImageAsBase64(floor_plan_url)
+    const { data: base64Image, mimeType: imageMimeType } = await fetchImageAsBase64(floor_plan_url)
 
     // Call Gemini Vision
     const geminiRes = await fetch(GEMINI_URL, {
@@ -96,7 +100,7 @@ export async function POST(request: NextRequest) {
           parts: [
             {
               inlineData: {
-                mimeType: 'image/jpeg',
+                mimeType: imageMimeType,
                 data: base64Image,
               }
             },
