@@ -31,6 +31,7 @@ export function RoomSequencingUI({ rooms, projectId }: RoomSequencingUIProps) {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const dragRef = useRef<number | null>(null)
+  const dragOccurredRef = useRef(false)
 
   async function saveOrder() {
     setSaving(true)
@@ -61,12 +62,14 @@ export function RoomSequencingUI({ rooms, projectId }: RoomSequencingUIProps) {
   }
 
   function handleDragStart(index: number) {
+    dragOccurredRef.current = false
     dragRef.current = index
     setDraggedIndex(index)
   }
 
   function handleDragOver(index: number) {
     if (dragRef.current === null || dragRef.current === index) return
+    dragOccurredRef.current = true
 
     const newRooms = [...orderedRooms]
     const dragged = newRooms[dragRef.current]
@@ -80,6 +83,11 @@ export function RoomSequencingUI({ rooms, projectId }: RoomSequencingUIProps) {
   function handleDragEnd() {
     dragRef.current = null
     setDraggedIndex(null)
+  }
+
+  function handleCardClick(roomId: string) {
+    if (dragOccurredRef.current) return
+    router.push(`/projects/${projectId}/rooms/${roomId}`)
   }
 
   const hasChanges = orderedRooms.some((r, i) => r.id !== rooms[i].id)
@@ -120,10 +128,11 @@ export function RoomSequencingUI({ rooms, projectId }: RoomSequencingUIProps) {
               onDragStart={() => handleDragStart(index)}
               onDragOver={() => handleDragOver(index)}
               onDragEnd={handleDragEnd}
+              onClick={() => handleCardClick(room.id)}
               className="group bg-white rounded-lg border border-stone-200 hover:border-stone-400 hover:shadow-sm transition-all p-4 flex items-center gap-4"
               style={{
                 opacity: draggedIndex === index ? 0.5 : 1,
-                cursor: 'grab',
+                cursor: 'pointer',
               }}
             >
               {/* Drag handle */}

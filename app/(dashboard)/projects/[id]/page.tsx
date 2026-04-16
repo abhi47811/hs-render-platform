@@ -177,8 +177,10 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
           {/* Internal Notes */}
           <ProjectNotes projectId={params.id} />
 
-          {/* Client Revision Requests */}
-          <ClientRevisionTracker projectId={params.id} />
+          {/* Client Revision Requests — only relevant after delivery workflow begins */}
+          {(['client_review', 'revisions', 'delivered'] as string[]).includes(project.status) && (
+            <ClientRevisionTracker projectId={params.id} />
+          )}
 
           {/* Sec 08: Room pass timeline strip */}
           {rooms.length > 0 && (

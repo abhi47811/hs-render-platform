@@ -74,8 +74,6 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
         dimensions_h: dimensions_h ?? null,
         status:       'not_started',
         current_pass: 0,
-        style_locked: false,
-        style_inherited: false,
       })
       .select('id')
       .single()
